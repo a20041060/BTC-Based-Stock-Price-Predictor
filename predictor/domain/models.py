@@ -26,6 +26,10 @@ class SentimentResult(BaseModel):
     """Represents the result of sentiment analysis."""
     score: float
     label: str
+    trend_score: float = 0.0
+    trend_label: str = "Neutral"
+    composite_score: float = 0.0
+    composite_label: str = "Neutral"
     analyzed_items: List[Dict[str, Any]]
 
 class StockData(BaseModel):

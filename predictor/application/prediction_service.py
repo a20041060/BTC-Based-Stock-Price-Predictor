@@ -46,7 +46,78 @@ class PredictionService:
             except Exception as e:
                 logger.error(f"Error fetching social posts for {ticker}: {e}")
         
-        return self.sentiment_analyzer.analyze(items)
+        # 1. Analyze News/Social Sentiment
+        base_result = self.sentiment_analyzer.analyze(items)
+        
+        # 2. Analyze Price Trend
+        trend_data = self._analyze_price_trend(ticker)
+        
+        # 3. Combine Scores (50% Sentiment, 50% Trend)
+        composite_score = (base_result.score * 0.5) + (trend_data['score'] * 0.5)
+        
+        composite_label = "Neutral"
+        if composite_score > 0.2: 
+            composite_label = "Bullish"
+        elif composite_score < -0.2: 
+            composite_label = "Bearish"
+            
+        return SentimentResult(
+            score=base_result.score,
+            label=base_result.label,
+            trend_score=trend_data['score'],
+            trend_label=trend_data['label'],
+            composite_score=composite_score,
+            composite_label=composite_label,
+            analyzed_items=base_result.analyzed_items
+        )
+
+    def _analyze_price_trend(self, ticker: str) -> dict:
+        try:
+            # Fetch last 150 days to ensure we have enough for SMA50
+            end_date = datetime.now()
+            start_date = end_date - pd.Timedelta(days=150)
+            
+            data = self.market_data.get_historical_data(ticker, start_date.strftime("%Y-%m-%d"))
+            
+            if data.empty or len(data) < 50:
+                return {"label": "Neutral", "score": 0.0}
+
+            prices = data[ticker]
+            
+            # Get latest available data
+            current_price = prices.iloc[-1]
+            
+            # Calculate SMAs
+            sma_20 = prices.rolling(window=20).mean().iloc[-1]
+            sma_50 = prices.rolling(window=50).mean().iloc[-1]
+            
+            # Score Calculation (-1 to 1)
+            score = 0.0
+            
+            # Price vs SMA20 (Short term momentum)
+            if current_price > sma_20: 
+                score += 0.5
+            else: 
+                score -= 0.5
+            
+            # SMA20 vs SMA50 (Medium term trend)
+            if sma_20 > sma_50: 
+                score += 0.5
+            else: 
+                score -= 0.5
+            
+            # Label
+            label = "Neutral"
+            if score >= 0.5: 
+                label = "Bullish"
+            elif score <= -0.5: 
+                label = "Bearish"
+            
+            return {"label": label, "score": score}
+            
+        except Exception as e:
+            logger.error(f"Error analyzing price trend for {ticker}: {e}")
+            return {"label": "Neutral", "score": 0.0}
 
     def predict_price(
         self,

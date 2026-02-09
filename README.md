@@ -73,6 +73,26 @@ The project utilizes a **Rigid Layered Architecture** that adheres to strict sof
     ```
     The backend will run at `http://127.0.0.1:8000/`.
 
+4.  **Mobile App (React Native)**
+    
+    The project includes a React Native mobile app in the `app/mobile_predictor` directory.
+
+    **Prerequisites**
+    *   Node.js (LTS recommended)
+    *   Expo CLI (via `npx`)
+
+    **Setup & Run**
+    Open a new terminal:
+    ```cmd
+    cd app\mobile_predictor
+    npm install
+    npx expo start
+    ```
+    
+    *   Scan the QR code with the **Expo Go** app on your phone.
+    *   Press `a` to run on Android Emulator (if installed).
+    *   Press `w` to run in web browser.
+
 ### Setup (macOS/Linux)
 
 1.  **Run the Setup Script**

@@ -85,9 +85,33 @@ with st.sidebar:
     with st.spinner("Analyzing news sentiment (AI Model)..."):
         sentiment_result = prediction_service.get_market_sentiment(stock_ticker)
         
-    st.info(
-        f"🤖 AI Sentiment Analysis: **{sentiment_result.label}** (Score: {sentiment_result.score:.2f})"
-    )
+    # --- Market Signal Display ---
+    if hasattr(sentiment_result, 'composite_label') and sentiment_result.composite_label:
+        st.subheader("🚦 Market Signal (Trend + News)")
+        
+        # Determine Color
+        comp_color = "green" if "Bullish" in sentiment_result.composite_label else "red" if "Bearish" in sentiment_result.composite_label else "orange"
+        
+        st.markdown(
+            f"<h2 style='text-align: center; color: {comp_color};'>{sentiment_result.composite_label.upper()}</h2>", 
+            unsafe_allow_html=True
+        )
+        st.caption(f"Composite Signal Strength: {sentiment_result.composite_score:.2f}")
+
+        # Breakdown
+        s_col1, s_col2 = st.columns(2)
+        with s_col1:
+            trend_color = "normal"
+            if "Bullish" in sentiment_result.trend_label: trend_color = "normal" # metric handles green automatically for positive delta? No, delta color depends on value.
+            # actually st.metric delta color is good enough
+            st.metric("Price Trend", sentiment_result.trend_label, delta=f"{sentiment_result.trend_score:.2f}")
+        with s_col2:
+            st.metric("News Sentiment", sentiment_result.label, delta=f"{sentiment_result.score:.2f}")
+            
+    else:
+        st.info(
+            f"🤖 AI Sentiment Analysis: **{sentiment_result.label}** (Score: {sentiment_result.score:.2f})"
+        )
 
     if settings.USE_TRANSFORMERS:
         st.caption("✅ Using FinBERT (Financial Transformers)")

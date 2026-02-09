@@ -9,3 +9,4 @@ torch
 pydantic
 ntscraper
 django
+django-cors-headers
