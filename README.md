@@ -12,15 +12,15 @@ The core philosophy of this project is **Correlation-First Prediction**.
 
 ## 🏗️ Architecture
 
-The project utilizes a **Hybrid Architecture** that combines the interactive frontend of **Streamlit** with the robust business logic structure of **Django**.
+The project utilizes a **Rigid Layered Architecture** that adheres to strict software engineering principles, ensuring scalability, maintainability, and testability.
 
 ### 1. Core Components
-*   **`btc_stock_predictor_ui.py` (Frontend)**: The interactive Streamlit dashboard. It acts as the "View" layer, handling user inputs and visualization.
-*   **`predictor/services.py` (Backend Logic)**: A Django app module that encapsulates all business logic, including:
-    *   Data Fetching (Yahoo Finance, Binance, Finnhub)
-    *   Statistical Calculations (Beta, Regression)
-    *   Sentiment Analysis (Transformers/VADER)
-*   **`btc_backend` (Django Project)**: The Django project foundation, allowing for future expansion into a full-stack web application.
+*   **`btc_stock_predictor_ui.py` (Frontend)**: The interactive Streamlit dashboard. It acts as the "View" layer, injecting dependencies from the Application layer.
+*   **`predictor/application/` (Application Layer)**: Orchestrates business logic using domain objects and interfaces.
+*   **`predictor/domain/` (Domain Layer)**: Defines strict Pydantic models for data entities.
+*   **`predictor/infrastructure/` (Infrastructure Layer)**: Concrete implementations of interfaces (external APIs like Yahoo Finance, Finnhub).
+*   **`predictor/interfaces/` (Interface Layer)**: Abstract Base Classes (ABCs) defining contracts for data providers and analyzers.
+*   **`predictor/core/` (Core Layer)**: Configuration management (Pydantic Settings) and centralized logging.
 
 ### 2. Data Pipeline
 *   **Real-Time BTC**: Fetched via **Binance Public API** (No key required, fastest).
@@ -97,8 +97,13 @@ The project utilizes a **Hybrid Architecture** that combines the interactive fro
 btc_stock_predictor/
 ├── btc_stock_predictor_ui.py  # 🏠 Main Application (Streamlit Frontend)
 ├── btc_backend/               # ⚙️ Django Project Settings
-├── predictor/                 # 🧠 Django App (Backend Logic)
-│   └── services.py            # 🛠️ Business Logic (Data & Math)
+├── predictor/                 # 🧠 Django App & Business Logic
+│   ├── application/           # 🎮 Application Services
+│   ├── core/                  # � Config & Logging
+│   ├── domain/                # 📦 Pydantic Models
+│   ├── infrastructure/        # 🔌 External API Implementations
+│   ├── interfaces/            # 📝 Abstract Base Classes
+│   └── views.py               # 🌐 Django Views
 ├── manage.py                  # 🚀 Django Management Script
 
 ├── requirements.txt           # 📦 Python Dependencies

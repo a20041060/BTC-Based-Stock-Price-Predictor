@@ -3,7 +3,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
-from predictor.services import fetch_stocks_data
+from predictor.infrastructure.market_data import MarketDataProvider
+from predictor.infrastructure.sentiment_analysis import SentimentAnalyzer
+from predictor.application.prediction_service import PredictionService
+
+# Dependency Injection with Caching
+@st.cache_resource
+def get_prediction_service():
+    market_data_provider = MarketDataProvider()
+    sentiment_analyzer = SentimentAnalyzer()
+    return PredictionService(market_data_provider, sentiment_analyzer)
+
+prediction_service = get_prediction_service()
 
 st.set_page_config(
     page_title="Stock Correlation Analysis", page_icon="🔗", layout="wide"
@@ -43,7 +54,7 @@ if len(selected_tickers) < 2:
 
 # --- Fetch Data ---
 with st.spinner("Fetching data..."):
-    data = fetch_stocks_data(selected_tickers, start_date)
+    data = prediction_service.get_correlation_data(selected_tickers, start_date)
 
 if data is None or data.empty:
     st.error(

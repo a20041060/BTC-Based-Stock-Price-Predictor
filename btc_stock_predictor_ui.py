@@ -1,27 +1,35 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from predictor.services import (
-    fetch_news,
-    analyze_sentiment,
-    fetch_realtime_price,
-    fetch_data,
-    calculate_metrics,
-    predict_prices,
-    HAS_TRANSFORMERS,
-)
+from datetime import datetime
+from predictor.core.config import settings
+from predictor.core.logger import get_logger
+from predictor.infrastructure.market_data import MarketDataProvider
+from predictor.infrastructure.sentiment_analysis import SentimentAnalyzer
+from predictor.application.prediction_service import PredictionService
+
+# --- Initialize Dependencies ---
+logger = get_logger("streamlit_app")
+
+# Dependency Injection with Caching
+@st.cache_resource
+def get_prediction_service():
+    market_data_provider = MarketDataProvider()
+    sentiment_analyzer = SentimentAnalyzer()
+    return PredictionService(market_data_provider, sentiment_analyzer)
+
+prediction_service = get_prediction_service()
+market_data_provider = prediction_service.market_data # Access for direct calls if needed
 
 # --- Page Config ---
-st.set_page_config(page_title="BTC Stock Predictor", page_icon="📈", layout="wide")
+st.set_page_config(page_title=settings.APP_NAME, page_icon="📈", layout="wide")
 
 # --- Title & Description ---
-st.title("🪙 BTC-Based Stock Price Predictor")
+st.title(f"🪙 {settings.APP_NAME}")
 st.markdown(
     """
     This tool predicts the price of a stock (e.g., Miners, Proxy Stocks) based on a target Bitcoin price. 
     It calculates the historical correlation and beta to estimate future moves.
-"""
+    """
 )
 
 # --- Sidebar Inputs ---
@@ -42,22 +50,30 @@ with st.sidebar:
 
     st.divider()
     st.markdown("**⚡ Real-Time Data Source**")
-    finnhub_api_key = st.text_input(
+    
+    # Update settings if user provides key (Note: In a real rigid app, we might avoid modifying global settings like this, 
+    # but for Streamlit interaction it's a necessary compromise or we pass it to the provider method)
+    finnhub_api_key_input = st.text_input(
         "Finnhub API Key (Optional)",
         type="password",
         help="Get free key at finnhub.io for faster stock data.",
     )
-    if not finnhub_api_key:
-        st.caption("ℹ️ Using Binance (Free) for BTC and Yahoo (Delayed) for Stocks.")
-    else:
+    
+    if finnhub_api_key_input:
+        settings.FINNHUB_API_KEY = finnhub_api_key_input
         st.caption("✅ Using Finnhub for Real-Time Stocks!")
+    else:
+        st.caption("ℹ️ Using Binance (Free) for BTC and Yahoo (Delayed) for Stocks.")
 
     target_btc_price = st.number_input(
         "Target BTC Price ($)", value=67000.0, step=1000.0, min_value=1.0
     )
-    start_date = st.date_input(
+    
+    start_date_input = st.date_input(
         "Start Date for Analysis", value=pd.to_datetime("2024-01-01")
     )
+    # Ensure start_date is datetime
+    start_date = pd.to_datetime(start_date_input)
 
     st.divider()
 
@@ -65,21 +81,20 @@ with st.sidebar:
 
     # Fetch and Analyze News
     with st.spinner("Analyzing news sentiment (AI Model)..."):
-        news_items = fetch_news(stock_ticker)
-        sentiment_score, sentiment_label, analyzed_news = analyze_sentiment(news_items)
-
+        sentiment_result = prediction_service.get_market_sentiment(stock_ticker)
+        
     st.info(
-        f"🤖 AI Sentiment Analysis: **{sentiment_label}** (Score: {sentiment_score:.2f})"
+        f"🤖 AI Sentiment Analysis: **{sentiment_result.label}** (Score: {sentiment_result.score:.2f})"
     )
 
-    if HAS_TRANSFORMERS:
+    if settings.USE_TRANSFORMERS:
         st.caption("✅ Using FinBERT (Financial Transformers)")
     else:
         st.caption("⚠️ Using VADER (Rule-based Fallback)")
 
     with st.expander("View Latest News Source"):
-        if analyzed_news:
-            for item in analyzed_news[:5]:
+        if sentiment_result.analyzed_items:
+            for item in sentiment_result.analyzed_items[:5]:
                 sentiment_color = (
                     "green"
                     if item["sentiment"] == "Bullish"
@@ -97,8 +112,8 @@ with st.sidebar:
     event_impact = st.select_slider(
         "Adjust Sentiment Impact",
         options=["Very Bearish", "Bearish", "Neutral", "Bullish", "Very Bullish"],
-        value=sentiment_label
-        if sentiment_label
+        value=sentiment_result.label
+        if sentiment_result.label
         in ["Very Bearish", "Bearish", "Neutral", "Bullish", "Very Bullish"]
         else "Neutral",
         help="Adjust based on recent news about AI data center contracts.",
@@ -112,10 +127,6 @@ with st.sidebar:
         "Very Bullish": 1.30,
     }
 
-    # Map "Positive" to "Bullish" for slider compatibility if needed
-    if event_impact == "Positive":
-        event_impact = "Bullish"
-
     event_multiplier = impact_multipliers.get(event_impact, 1.0)
 
     st.divider()
@@ -127,7 +138,11 @@ market_tickers = ["BTC-USD", "IREN", "APLD", "HUT", "MARA", "CLSK", "COIN", "MST
 cols = st.columns(4)
 
 for i, ticker in enumerate(market_tickers):
-    price = fetch_realtime_price(ticker, finnhub_api_key)
+    if ticker == "BTC-USD":
+        price = market_data_provider.get_realtime_btc_price()
+    else:
+        price = market_data_provider.get_realtime_stock_price(ticker)
+        
     with cols[i % 4]:
         st.metric(label=ticker, value=f"${price:,.2f}" if price else "N/A")
 
@@ -137,139 +152,68 @@ st.divider()
 st.header("📊 Detailed Stock Analysis")
 
 analysis_tickers = ["IREN", "APLD", "HUT", "MARA", "CLSK", "COIN", "MSTR"]
-real_time_btc = fetch_realtime_price("BTC-USD", finnhub_api_key)
 
 for ticker in analysis_tickers:
     st.markdown(f"### 🪙 {ticker}")
 
     with st.spinner(f"Analyzing {ticker}..."):
-        data = fetch_data(ticker, start_date)
+        result = prediction_service.predict_price(
+            ticker=ticker,
+            target_btc_price=target_btc_price,
+            start_date=start_date,
+            event_impact_multiplier=event_multiplier,
+            manual_current_btc=current_btc_price_ref
+        )
 
-        # Fetch Real-time Stock Price
-        real_time_stock = fetch_realtime_price(ticker, finnhub_api_key)
-
-        # Determine which BTC price to use (Manual Override > Real-time > Historical Last Close)
-        if current_btc_price_ref > 0:
-            used_btc_price = current_btc_price_ref
-        elif real_time_btc > 0:
-            used_btc_price = real_time_btc
-        elif data is not None and not data.empty:
-            used_btc_price = data["BTC-USD"].iloc[-1]
-        else:
-            used_btc_price = 0.0
-
-        # Determine which Stock price to use (Real-time > Historical Last Close)
-        if real_time_stock > 0:
-            used_stock_price = real_time_stock
-        elif data is not None and not data.empty:
-            used_stock_price = data[ticker].iloc[-1]
-        else:
-            used_stock_price = 0.0
-
-        if data is not None and not data.empty:
-            # Perform Calculations
-            beta, correlation, beta_model = calculate_metrics(data, ticker)
-            current_btc, current_stock, pred_beta, pred_power_law = predict_prices(
-                data,
-                ticker,
-                target_btc_price,
-                beta,
-                event_multiplier,
-                manual_current_btc=used_btc_price,
-                manual_current_stock=used_stock_price,
-            )
-
+        if result:
             # --- Display Metrics ---
             col1, col2, col3, col4 = st.columns(4)
 
             with col1:
                 st.metric(
                     "Current BTC Price",
-                    f"${current_btc:,.2f}",
-                    delta=f"{((current_btc - data['BTC-USD'].iloc[-2])/data['BTC-USD'].iloc[-2]*100):.2f}%",
+                    f"${result.current_btc_price:,.2f}"
                 )
             with col2:
                 st.metric(
                     f"Current {ticker} Price",
-                    f"${current_stock:,.2f}",
-                    delta=f"{((current_stock - data[ticker].iloc[-2])/data[ticker].iloc[-2]*100):.2f}%",
+                    f"${result.current_stock_price:,.2f}"
                 )
             with col3:
                 st.metric(
                     "Beta (Volatility)",
-                    f"{beta:.2f}",
-                    help="How much the stock moves relative to BTC. >1 means more volatile.",
+                    f"{result.beta:.2f}",
+                    help="Measure of how much the stock moves relative to BTC."
                 )
             with col4:
                 st.metric(
                     "Correlation",
-                    f"{correlation:.2f}",
-                    help="1.0 is perfect correlation. 0.0 is no correlation.",
+                    f"{result.correlation:.2f}",
+                    help="Correlation between stock and BTC returns."
                 )
 
-            # --- Display Predictions ---
-            st.caption(f"🔮 Price Prediction at BTC ${target_btc_price:,.0f}")
-
+            # --- Prediction Display ---
+            st.success(
+                f"🎯 **Prediction for {ticker} at BTC ${target_btc_price:,.0f}**"
+            )
+            
             p_col1, p_col2 = st.columns(2)
-
+            
             with p_col1:
-                st.info(
-                    f"**Beta Model Prediction:**\n# ${pred_beta:,.2f} ({((pred_beta - current_stock)/current_stock*100):.1f}%)"
+                st.metric(
+                    label="Based on Beta (Linear)",
+                    value=f"${result.predicted_stock_price_beta:.2f}",
+                    delta=f"{((result.predicted_stock_price_beta - result.current_stock_price) / result.current_stock_price * 100):.1f}% Potential"
                 )
-
+                
             with p_col2:
-                st.success(
-                    f"**Power Law (Log-Log) Prediction:**\n# ${pred_power_law:,.2f}"
+                st.metric(
+                    label="Based on Power Law (Log-Log)",
+                    value=f"${result.predicted_stock_price_power_law:.2f}",
+                    delta=f"{((result.predicted_stock_price_power_law - result.current_stock_price) / result.current_stock_price * 100):.1f}% Potential"
                 )
-
-            # --- Visualizations ---
-            with st.expander(f"📈 View Charts for {ticker}", expanded=False):
-                tab1, tab2 = st.tabs(["Regression Analysis", "Price History"])
-
-                with tab1:
-                    # Scatter Plot with Regression Line
-                    fig = px.scatter(
-                        data,
-                        x="BTC-USD",
-                        y=ticker,
-                        title=f"{ticker} vs BTC Price Correlation",
-                        trendline="ols",
-                        opacity=0.6,
-                    )
-                    # Add the target point
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[target_btc_price],
-                            y=[pred_beta],
-                            mode="markers+text",
-                            marker=dict(color="red", size=15, symbol="star"),
-                            name="Beta Prediction",
-                            text=[f"Beta: ${pred_beta:.0f}"],
-                            textposition="top center",
-                        )
-                    )
-                    fig.add_trace(
-                        go.Scatter(
-                            x=[target_btc_price],
-                            y=[pred_power_law],
-                            mode="markers+text",
-                            marker=dict(color="green", size=15, symbol="star"),
-                            name="Power Law Prediction",
-                            text=[f"Power: ${pred_power_law:.0f}"],
-                            textposition="bottom center",
-                        )
-                    )
-                    st.plotly_chart(fig, width="stretch", key=f"scatter_{ticker}")
-
-                with tab2:
-                    # Normalized Price History
-                    norm_data = data / data.iloc[0] * 100
-                    fig2 = px.line(
-                        norm_data, title="Normalized Price History (Base=100)"
-                    )
-                    st.plotly_chart(fig2, width="stretch", key=f"history_{ticker}")
 
         else:
-            st.error(f"No data found for {ticker}.")
+            st.warning(f"Insufficient data to analyze {ticker}")
 
     st.divider()
