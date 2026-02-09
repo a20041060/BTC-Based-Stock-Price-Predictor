@@ -38,6 +38,48 @@ st.markdown(
 with st.sidebar:
     st.header("⚙️ Configuration")
 
+    # Dark Mode Toggle
+    is_dark_mode = st.toggle("Dark Mode 🌙", value=True)
+    if is_dark_mode:
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #0E1117;
+                color: #FAFAFA;
+            }
+            section[data-testid="stSidebar"] {
+                background-color: #262730;
+                color: #FAFAFA;
+            }
+            /* Cards/Containers overrides might be needed */
+            div[data-testid="stMetricValue"] {
+                color: #FAFAFA;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+         st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #FFFFFF;
+                color: #000000;
+            }
+            section[data-testid="stSidebar"] {
+                background-color: #F0F2F6;
+                color: #000000;
+            }
+            div[data-testid="stMetricValue"] {
+                color: #000000;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
     # Stock Selection (For News Only)
     news_tickers = ["IREN", "APLD", "HUT", "MARA", "CLSK", "COIN", "MSTR"]
     stock_ticker = st.selectbox(

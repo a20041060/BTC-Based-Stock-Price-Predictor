@@ -8,11 +8,22 @@ import { MarketPrices, ExtendedPriceInfo } from '../types';
 interface DashboardScreenProps {
   useDirectFetch: boolean;
   useDirectStocks: boolean;
+  isDarkMode?: boolean;
 }
 
-export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardScreenProps) => {
+export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }: DashboardScreenProps) => {
   const [marketPrices, setMarketPrices] = useState<MarketPrices>({});
   const [loadingPrices, setLoadingPrices] = useState(false);
+
+  const themeStyles = {
+    headerTitle: { color: isDarkMode ? '#fff' : '#1a1a1a' },
+    lastUpdated: { color: isDarkMode ? '#aaa' : '#666' },
+    tickerText: { color: isDarkMode ? '#eee' : '#333' },
+    priceText: { color: isDarkMode ? '#4dabf7' : '#007AFF' },
+    extendedText: { color: isDarkMode ? '#bbb' : '#666' },
+    loadingText: { color: isDarkMode ? '#aaa' : '#666' },
+    card: { backgroundColor: isDarkMode ? '#1e1e1e' : '#fff' },
+  };
 
   const fetchDirectBTCPrice = async () => {
     try {
@@ -108,11 +119,11 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
 
   const renderPriceInfo = (symbol: string, data: number | ExtendedPriceInfo | null) => {
     if (data === null || data === undefined) {
-      return <Text style={styles.priceText}>N/A</Text>;
+      return <Text style={[styles.priceText, themeStyles.priceText]}>N/A</Text>;
     }
 
     if (typeof data === 'number') {
-      return <Text style={styles.priceText}>${data.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>;
+      return <Text style={[styles.priceText, themeStyles.priceText]}>${data.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>;
     }
 
     // Extended Info Object
@@ -127,16 +138,16 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
     
     return (
       <View style={{ alignItems: 'center' }}>
-        <Text style={styles.priceText}>
+        <Text style={[styles.priceText, themeStyles.priceText]}>
           ${data.price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
         </Text>
         
         {showPre && (
-          <Text style={styles.extendedText}>Pre: ${data.pre_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>
+          <Text style={[styles.extendedText, themeStyles.extendedText]}>Pre: ${data.pre_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>
         )}
         
         {showPost && (
-          <Text style={styles.extendedText}>Post: ${data.post_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>
+          <Text style={[styles.extendedText, themeStyles.extendedText]}>Post: ${data.post_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>
         )}
       </View>
     );
@@ -147,19 +158,19 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
       contentContainerStyle={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={loadingPrices} onRefresh={fetchMarketPrices} />}
     >
-      <Text style={styles.headerTitle}>⚡ Real-Time Market</Text>
-      <Text style={styles.lastUpdated}>Pull to refresh • Auto-updates 30s</Text>
+      <Text style={[styles.headerTitle, themeStyles.headerTitle]}>⚡ Real-Time Market</Text>
+      <Text style={[styles.lastUpdated, themeStyles.lastUpdated]}>Pull to refresh • Auto-updates 30s</Text>
       
       <View style={styles.gridContainer}>
         {Object.entries(marketPrices).length > 0 ? (
           Object.entries(marketPrices).map(([symbol, price]) => (
-            <Card key={symbol} style={styles.priceCard}>
-              <Text style={styles.tickerText}>{symbol}</Text>
+            <Card key={symbol} style={[styles.priceCard, themeStyles.card]}>
+              <Text style={[styles.tickerText, themeStyles.tickerText]}>{symbol}</Text>
               {renderPriceInfo(symbol, price)}
             </Card>
           ))
         ) : (
-          <Text style={styles.loadingText}>Loading market data...</Text>
+          <Text style={[styles.loadingText, themeStyles.loadingText]}>Loading market data...</Text>
         )}
       </View>
     </ScrollView>

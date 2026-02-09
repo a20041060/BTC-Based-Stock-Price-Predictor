@@ -5,14 +5,19 @@ interface TabButtonProps {
   title: string;
   isActive: boolean;
   onPress: () => void;
+  isDarkMode?: boolean;
 }
 
-export const TabButton = ({ title, isActive, onPress }: TabButtonProps) => (
+export const TabButton = ({ title, isActive, onPress, isDarkMode }: TabButtonProps) => (
   <TouchableOpacity 
     style={[styles.tabButton, isActive && styles.activeTabButton]} 
     onPress={onPress}
   >
-    <Text style={[styles.tabButtonText, isActive && styles.activeTabButtonText]}>{title}</Text>
+    <Text style={[
+      styles.tabButtonText, 
+      isDarkMode && styles.darkTabButtonText,
+      isActive && styles.activeTabButtonText
+    ]}>{title}</Text>
   </TouchableOpacity>
 );
 
@@ -29,6 +34,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#666',
+  },
+  darkTabButtonText: {
+    color: '#aaa',
   },
   activeTabButtonText: {
     color: '#fff',

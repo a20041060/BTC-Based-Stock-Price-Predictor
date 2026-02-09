@@ -8,21 +8,50 @@ interface SettingsScreenProps {
   setUseDirectFetch: (value: boolean) => void;
   useDirectStocks: boolean;
   setUseDirectStocks: (value: boolean) => void;
+  isDarkMode: boolean;
+  setIsDarkMode: (value: boolean) => void;
 }
 
 export const SettingsScreen = ({ 
   useDirectFetch, 
   setUseDirectFetch, 
   useDirectStocks, 
-  setUseDirectStocks 
+  setUseDirectStocks,
+  isDarkMode,
+  setIsDarkMode
 }: SettingsScreenProps) => {
+  const themeStyles = {
+    headerTitle: { color: isDarkMode ? '#fff' : '#1a1a1a' },
+    sectionHeader: { color: isDarkMode ? '#eee' : '#333' },
+    label: { color: isDarkMode ? '#ccc' : '#555' },
+    text: { color: isDarkMode ? '#ddd' : '#333' },
+    value: { color: isDarkMode ? '#ddd' : '#333' },
+    description: { color: isDarkMode ? '#aaa' : '#666' },
+    card: { backgroundColor: isDarkMode ? '#1e1e1e' : '#fff' },
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContent}>
-      <Text style={styles.headerTitle}>⚙️ Settings</Text>
-      <Card>
-        <Text style={styles.sectionHeader}>Data Source</Text>
+      <Text style={[styles.headerTitle, themeStyles.headerTitle]}>⚙️ Settings</Text>
+      
+      <Card style={themeStyles.card}>
+        <Text style={[styles.sectionHeader, themeStyles.sectionHeader]}>Appearance</Text>
         <View style={styles.settingRow}>
-          <Text style={styles.label}>Direct BTC Fetch (Binance)</Text>
+          <Text style={[styles.label, themeStyles.label]}>Dark Mode</Text>
+          <Switch
+            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            thumbColor={isDarkMode ? "#f5dd4b" : "#f4f3f4"}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={setIsDarkMode}
+            value={isDarkMode}
+          />
+        </View>
+      </Card>
+
+      <Card style={themeStyles.card}>
+        <Text style={[styles.sectionHeader, themeStyles.sectionHeader]}>Data Source</Text>
+        <View style={styles.settingRow}>
+          <Text style={[styles.label, themeStyles.label]}>Direct BTC Fetch (Binance)</Text>
           <Switch
             trackColor={{ false: "#767577", true: "#81b0ff" }}
             thumbColor={useDirectFetch ? "#f5dd4b" : "#f4f3f4"}
@@ -31,14 +60,14 @@ export const SettingsScreen = ({
             value={useDirectFetch}
           />
         </View>
-        <Text style={styles.settingDescription}>
+        <Text style={[styles.settingDescription, themeStyles.description]}>
           Fetch BTC prices directly from Binance API.
         </Text>
 
         <View style={styles.divider} />
 
         <View style={styles.settingRow}>
-          <Text style={styles.label}>Direct Stock Fetch (Yahoo)</Text>
+          <Text style={[styles.label, themeStyles.label]}>Direct Stock Fetch (Yahoo)</Text>
           <Switch
             trackColor={{ false: "#767577", true: "#81b0ff" }}
             thumbColor={useDirectStocks ? "#f5dd4b" : "#f4f3f4"}
@@ -47,18 +76,18 @@ export const SettingsScreen = ({
             value={useDirectStocks}
           />
         </View>
-        <Text style={styles.settingDescription}>
+        <Text style={[styles.settingDescription, themeStyles.description]}>
           Fetch stock prices directly from Yahoo Finance. Warning: May fail on web due to CORS (use Proxy or Native app).
         </Text>
       </Card>
       
-      <Card>
-        <Text style={styles.sectionHeader}>App Info</Text>
-        <Text style={styles.text}>BTC Stock Predictor v1.0</Text>
-        <Text style={styles.text}>Rigid Architecture Mobile Client</Text>
+      <Card style={themeStyles.card}>
+        <Text style={[styles.sectionHeader, themeStyles.sectionHeader]}>App Info</Text>
+        <Text style={[styles.text, themeStyles.text]}>BTC Stock Predictor v1.0</Text>
+        <Text style={[styles.text, themeStyles.text]}>Rigid Architecture Mobile Client</Text>
         <View style={styles.divider} />
-        <Text style={styles.label}>Backend URL</Text>
-        <Text style={styles.value}>{API_BASE_URL}</Text>
+        <Text style={[styles.label, themeStyles.label]}>Backend URL</Text>
+        <Text style={[styles.value, themeStyles.value]}>{API_BASE_URL}</Text>
       </Card>
     </ScrollView>
   );
