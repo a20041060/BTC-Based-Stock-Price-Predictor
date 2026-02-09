@@ -3,7 +3,7 @@ import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native
 import axios from 'axios';
 import { Card } from '../components/Card';
 import { API_BASE_URL, STOCK_TICKERS } from '../constants';
-import { MarketPrices } from '../types';
+import { MarketPrices, ExtendedPriceInfo } from '../types';
 
 interface DashboardScreenProps {
   useDirectFetch: boolean;
@@ -26,11 +26,20 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
 
   const fetchDirectStockPrice = async (ticker: string) => {
     try {
-      // Using Yahoo Finance query1 API (Unofficial but widely used)
-      // Note: May encounter CORS issues in Web Browser environments without proxy
-      const response = await axios.get(`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1m&range=1d`, { timeout: 5000 });
-      const result = response.data.chart.result[0];
-      return result.meta.regularMarketPrice;
+      // Use quote endpoint for extended hours data
+      const response = await axios.get(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`, { timeout: 5000 });
+      const result = response.data.quoteResponse.result[0];
+      
+      // Map Yahoo marketState to our format if needed
+      // Yahoo returns: "PRE", "REGULAR", "POST", "CLOSED" (usually)
+      
+      return {
+        price: result.regularMarketPrice,
+        market_state: result.marketState,
+        regular_market_price: result.regularMarketPrice,
+        pre_market_price: result.preMarketPrice,
+        post_market_price: result.postMarketPrice
+      } as ExtendedPriceInfo;
     } catch (err) {
       console.warn(`Direct Yahoo fetch failed for ${ticker}:`, err);
       return null;
@@ -96,6 +105,40 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
     return () => clearInterval(interval);
   }, [useDirectFetch, useDirectStocks]);
 
+  const renderPriceInfo = (symbol: string, data: number | ExtendedPriceInfo | null) => {
+    if (data === null || data === undefined) {
+      return <Text style={styles.priceText}>N/A</Text>;
+    }
+
+    if (typeof data === 'number') {
+      return <Text style={styles.priceText}>${data.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>;
+    }
+
+    // Extended Info Object
+    const isMarketOpen = data.market_state === 'OPEN' || data.market_state === 'REGULAR';
+    const showPre = !isMarketOpen && (data.market_state === 'PRE' || data.market_state === 'CLOSED') && data.pre_market_price;
+    const showPost = !isMarketOpen && (data.market_state === 'POST' || data.market_state === 'CLOSED') && data.post_market_price;
+
+    // Logic: If Closed, show relevant one. Usually Yahoo gives both or valid ones.
+    // Requirement: "when US stock market open dont show the pre-market and after-market price"
+    
+    return (
+      <View style={{ alignItems: 'center' }}>
+        <Text style={styles.priceText}>
+          ${data.price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
+        </Text>
+        
+        {showPre && (
+          <Text style={styles.extendedText}>Pre: ${data.pre_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>
+        )}
+        
+        {showPost && (
+          <Text style={styles.extendedText}>Post: ${data.post_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>
+        )}
+      </View>
+    );
+  };
+
   return (
     <ScrollView 
       contentContainerStyle={styles.scrollContent}
@@ -109,9 +152,7 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
           Object.entries(marketPrices).map(([symbol, price]) => (
             <Card key={symbol} style={styles.priceCard}>
               <Text style={styles.tickerText}>{symbol}</Text>
-              <Text style={styles.priceText}>
-                ${price ? price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : 'N/A'}
-              </Text>
+              {renderPriceInfo(symbol, price)}
             </Card>
           ))
         ) : (
@@ -148,6 +189,7 @@ const styles = StyleSheet.create({
     width: '48%',
     alignItems: 'center',
     paddingVertical: 20,
+    marginBottom: 15,
   },
   tickerText: {
     fontSize: 18,
@@ -159,6 +201,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
     marginTop: 5,
+  },
+  extendedText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
   },
   loadingText: {
     textAlign: 'center',

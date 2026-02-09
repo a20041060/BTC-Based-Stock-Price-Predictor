@@ -15,6 +15,11 @@ class IMarketDataProvider(ABC):
     def get_realtime_stock_price(self, ticker: str) -> Optional[float]:
         """Fetches the current price of a stock."""
         pass
+
+    @abstractmethod
+    def get_extended_stock_info(self, ticker: str) -> dict:
+        """Fetches stock price with extended hours information."""
+        pass
         
     @abstractmethod
     def get_historical_data(self, ticker: str, start_date: str) -> pd.DataFrame:

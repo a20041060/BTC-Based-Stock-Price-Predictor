@@ -19,6 +19,14 @@ export interface SentimentResult {
   items: any[];
 }
 
+export interface ExtendedPriceInfo {
+  price: number;
+  market_state?: string;
+  pre_market_price?: number | null;
+  post_market_price?: number | null;
+  regular_market_price?: number;
+}
+
 export interface MarketPrices {
-  [ticker: string]: number;
+  [ticker: string]: number | ExtendedPriceInfo | null;
 }

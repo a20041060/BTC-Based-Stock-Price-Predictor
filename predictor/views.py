@@ -80,11 +80,8 @@ def api_market_prices(request):
         
         prices = {}
         for ticker in tickers:
-            if ticker == "BTC-USD":
-                price = market_data_provider.get_realtime_btc_price()
-            else:
-                price = market_data_provider.get_realtime_stock_price(ticker)
-            prices[ticker] = price
+            # Use extended info for all tickers (including BTC)
+            prices[ticker] = market_data_provider.get_extended_stock_info(ticker)
             
         return JsonResponse({'prices': prices})
     except Exception as e:

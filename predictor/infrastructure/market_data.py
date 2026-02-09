@@ -2,7 +2,9 @@ import yfinance as yf
 import pandas as pd
 import requests
 import logging
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+from datetime import datetime
+import pytz
 from predictor.interfaces.market_data_provider import IMarketDataProvider
 from predictor.domain.models import NewsItem
 from predictor.core.config import settings
@@ -39,6 +41,90 @@ class MarketDataProvider(IMarketDataProvider):
         
         # Fallback to yfinance
         return self._get_yfinance_price(ticker)
+
+    def get_extended_stock_info(self, ticker: str) -> Dict[str, Any]:
+        """Fetches detailed stock info including pre/post market prices."""
+        try:
+            # Check for Crypto
+            if ticker == "BTC-USD":
+                price = self.get_realtime_btc_price()
+                return {
+                    "price": price,
+                    "market_state": "OPEN", # Crypto is always open
+                    "regular_market_price": price,
+                    "pre_market_price": None,
+                    "post_market_price": None
+                }
+
+            # For Stocks
+            t = yf.Ticker(ticker)
+            # Use fast_info for basic data to ensure speed if info fails or is slow
+            # But info is needed for pre/post.
+            
+            # Helper to check market hours
+            tz = pytz.timezone('US/Eastern')
+            now = datetime.now(tz)
+            
+            # Simple Market State Logic
+            is_weekend = now.weekday() >= 5
+            current_time = now.time()
+            market_open = datetime.strptime("09:30", "%H:%M").time()
+            market_close = datetime.strptime("16:00", "%H:%M").time()
+            pre_start = datetime.strptime("04:00", "%H:%M").time()
+            post_end = datetime.strptime("20:00", "%H:%M").time()
+            
+            market_state = "CLOSED"
+            if not is_weekend:
+                if market_open <= current_time <= market_close:
+                    market_state = "OPEN"
+                elif pre_start <= current_time < market_open:
+                    market_state = "PRE"
+                elif market_close < current_time <= post_end:
+                    market_state = "POST"
+            
+            # Fetch Info
+            try:
+                info = t.info
+                current_price = info.get('currentPrice') or info.get('regularMarketPrice')
+                pre_price = info.get('preMarketPrice')
+                post_price = info.get('postMarketPrice')
+                
+                # Try to use Yahoo's marketState if available
+                yahoo_state = info.get('marketState')
+                if yahoo_state:
+                    if yahoo_state == "REGULAR":
+                        market_state = "OPEN"
+                    elif yahoo_state in ["PRE", "POST", "CLOSED"]:
+                        market_state = yahoo_state
+                
+                # If info fetch worked, use it
+                return {
+                    "price": current_price,
+                    "market_state": market_state,
+                    "regular_market_price": info.get('regularMarketPrice'),
+                    "pre_market_price": pre_price,
+                    "post_market_price": post_price
+                }
+            except Exception as e:
+                logger.warning(f"Failed to fetch full info for {ticker}, falling back to fast_info: {e}")
+                
+            # Fallback to fast_info if .info fails
+            price = self._get_yfinance_price(ticker)
+            return {
+                "price": price,
+                "market_state": market_state,
+                "regular_market_price": price,
+                "pre_market_price": None,
+                "post_market_price": None
+            }
+
+        except Exception as e:
+            logger.error(f"Error fetching extended info for {ticker}: {e}")
+            return {
+                "price": None,
+                "market_state": "CLOSED",
+                "error": str(e)
+            }
 
     def _get_yfinance_price(self, ticker: str) -> Optional[float]:
         try:

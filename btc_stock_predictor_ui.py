@@ -178,13 +178,29 @@ market_tickers = ["BTC-USD", "IREN", "APLD", "HUT", "MARA", "CLSK", "COIN", "MST
 cols = st.columns(4)
 
 for i, ticker in enumerate(market_tickers):
-    if ticker == "BTC-USD":
-        price = market_data_provider.get_realtime_btc_price()
-    else:
-        price = market_data_provider.get_realtime_stock_price(ticker)
+    info = market_data_provider.get_extended_stock_info(ticker)
         
     with cols[i % 4]:
-        st.metric(label=ticker, value=f"${price:,.2f}" if price else "N/A")
+        if not info or info.get("price") is None:
+            st.metric(label=ticker, value="N/A")
+        else:
+            price = info.get("price")
+            st.metric(label=ticker, value=f"${price:,.2f}")
+            
+            # Show Extended Hours if Market is NOT Open
+            market_state = info.get("market_state")
+            if market_state != "OPEN":
+                pre_price = info.get("pre_market_price")
+                post_price = info.get("post_market_price")
+                
+                # Logic: Show relevant extended hours prices
+                if market_state == "PRE":
+                    if pre_price: st.caption(f"🌑 Pre-Market: ${pre_price:,.2f}")
+                elif market_state == "POST":
+                    if post_price: st.caption(f"🌑 After-Market: ${post_price:,.2f}")
+                else: # CLOSED
+                    if pre_price: st.caption(f"🌑 Pre-Market: ${pre_price:,.2f}")
+                    if post_price: st.caption(f"🌑 After-Market: ${post_price:,.2f}")
 
 st.divider()
 
