@@ -11,6 +11,17 @@ class NewsItem(BaseModel):
     content: Optional[str] = None
     summary: Optional[str] = None
 
+class SocialPost(BaseModel):
+    """Represents a social media post (e.g., X.com tweet)."""
+    id: str
+    content: str
+    author: str
+    date: datetime
+    likes: int = 0
+    retweets: int = 0
+    url: str
+    platform: str = "X"
+
 class SentimentResult(BaseModel):
     """Represents the result of sentiment analysis."""
     score: float

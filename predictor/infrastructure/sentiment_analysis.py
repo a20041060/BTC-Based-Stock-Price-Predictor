@@ -1,9 +1,9 @@
 import logging
 import numpy as np
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from predictor.interfaces.sentiment_analyzer import ISentimentAnalyzer
-from predictor.domain.models import NewsItem, SentimentResult
+from predictor.domain.models import NewsItem, SocialPost, SentimentResult
 from predictor.core.config import settings
 from predictor.core.logger import get_logger
 
@@ -26,15 +26,20 @@ class SentimentAnalyzer(ISentimentAnalyzer):
         except Exception as e:
             logger.warning(f"Failed to load FinBERT model: {e}. Falling back to VADER.")
 
-    def analyze(self, news_items: List[NewsItem]) -> SentimentResult:
-        if not news_items:
+    def analyze(self, items: List[Union[NewsItem, SocialPost]]) -> SentimentResult:
+        if not items:
             return SentimentResult(score=0.0, label="Neutral", analyzed_items=[])
 
         scores = []
         analyzed_items_data = []
 
-        for item in news_items:
-            text = f"{item.title}. {item.summary or ''}"
+        for item in items:
+            text = ""
+            if isinstance(item, NewsItem):
+                text = f"{item.title}. {item.summary or ''}"
+            elif isinstance(item, SocialPost):
+                text = item.content
+            
             if not text.strip():
                 continue
 
@@ -65,14 +70,31 @@ class SentimentAnalyzer(ISentimentAnalyzer):
                 score_val, label = self._analyze_vader(text)
 
             scores.append(score_val)
-            analyzed_items_data.append({
-                "title": item.title,
-                "link": item.link,
-                "provider": item.provider,
-                "date": item.date,
+            
+            item_data = {
                 "sentiment": label,
                 "score": score_val
-            })
+            }
+            
+            if isinstance(item, NewsItem):
+                item_data.update({
+                    "title": item.title,
+                    "link": item.link,
+                    "provider": item.provider,
+                    "date": item.date,
+                    "type": "news"
+                })
+            elif isinstance(item, SocialPost):
+                item_data.update({
+                    "content": item.content,
+                    "author": item.author,
+                    "url": item.url,
+                    "date": item.date.isoformat() if hasattr(item.date, 'isoformat') else str(item.date),
+                    "platform": item.platform,
+                    "type": "social"
+                })
+            
+            analyzed_items_data.append(item_data)
 
         if not scores:
             return SentimentResult(score=0.0, label="Neutral", analyzed_items=[])

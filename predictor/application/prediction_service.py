@@ -6,6 +6,7 @@ import pandas as pd
 
 from predictor.interfaces.market_data_provider import IMarketDataProvider
 from predictor.interfaces.sentiment_analyzer import ISentimentAnalyzer
+from predictor.interfaces.social_media_provider import ISocialMediaProvider
 from predictor.domain.models import PredictionResult, SentimentResult, NewsItem
 from predictor.core.logger import get_logger
 
@@ -15,15 +16,37 @@ class PredictionService:
     def __init__(
         self, 
         market_data_provider: IMarketDataProvider,
-        sentiment_analyzer: ISentimentAnalyzer
+        sentiment_analyzer: ISentimentAnalyzer,
+        social_media_provider: Optional[ISocialMediaProvider] = None
     ):
         self.market_data = market_data_provider
         self.sentiment_analyzer = sentiment_analyzer
+        self.social_media_provider = social_media_provider
 
     def get_market_sentiment(self, ticker: str) -> SentimentResult:
         logger.info(f"Analyzing sentiment for {ticker}")
-        news_items = self.market_data.get_news(ticker)
-        return self.sentiment_analyzer.analyze(news_items)
+        
+        items = []
+        
+        # Get News
+        try:
+            news_items = self.market_data.get_news(ticker)
+            items.extend(news_items)
+        except Exception as e:
+            logger.error(f"Error fetching news for {ticker}: {e}")
+            
+        # Get Social Posts
+        if self.social_media_provider:
+            try:
+                # Search for ticker with $ prefix (common in finance twitter)
+                # and maybe company name if we had it, but ticker is good start
+                # Limiting to 5-10 posts per query to be fast
+                posts = self.social_media_provider.get_posts(f"${ticker}", limit=10)
+                items.extend(posts)
+            except Exception as e:
+                logger.error(f"Error fetching social posts for {ticker}: {e}")
+        
+        return self.sentiment_analyzer.analyze(items)
 
     def predict_price(
         self,

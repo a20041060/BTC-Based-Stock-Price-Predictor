@@ -5,6 +5,7 @@ from predictor.core.config import settings
 from predictor.core.logger import get_logger
 from predictor.infrastructure.market_data import MarketDataProvider
 from predictor.infrastructure.sentiment_analysis import SentimentAnalyzer
+from predictor.infrastructure.social_media_scraper import NitterScraperProvider
 from predictor.application.prediction_service import PredictionService
 
 # --- Initialize Dependencies ---
@@ -15,7 +16,8 @@ logger = get_logger("streamlit_app")
 def get_prediction_service():
     market_data_provider = MarketDataProvider()
     sentiment_analyzer = SentimentAnalyzer()
-    return PredictionService(market_data_provider, sentiment_analyzer)
+    social_media_provider = NitterScraperProvider()
+    return PredictionService(market_data_provider, sentiment_analyzer, social_media_provider)
 
 prediction_service = get_prediction_service()
 market_data_provider = prediction_service.market_data # Access for direct calls if needed
@@ -66,7 +68,7 @@ with st.sidebar:
         st.caption("ℹ️ Using Binance (Free) for BTC and Yahoo (Delayed) for Stocks.")
 
     target_btc_price = st.number_input(
-        "Target BTC Price ($)", value=67000.0, step=1000.0, min_value=1.0
+        "Target BTC Price ($)", value=70500.0, step=1000.0, min_value=1.0
     )
     
     start_date_input = st.date_input(
@@ -92,22 +94,36 @@ with st.sidebar:
     else:
         st.caption("⚠️ Using VADER (Rule-based Fallback)")
 
-    with st.expander("View Latest News Source"):
+    with st.expander("View Latest News & Social"):
         if sentiment_result.analyzed_items:
-            for item in sentiment_result.analyzed_items[:5]:
+            for item in sentiment_result.analyzed_items[:10]:
                 sentiment_color = (
                     "green"
-                    if item["sentiment"] == "Bullish"
+                    if item["sentiment"] in ["Bullish", "Very Bullish"]
                     else "red"
                     if item["sentiment"] == "Bearish"
                     else "gray"
                 )
-                st.markdown(
-                    f"**:{sentiment_color}[{item['sentiment']}]** [{item['title']}]({item['link']})"
-                )
-                st.caption(f"{item['provider']} • {item['date']}")
+                
+                if item.get("type") == "news":
+                     st.markdown(
+                        f"**{item['title']}** ({item['provider']}) - :{sentiment_color}[{item['sentiment']}]"
+                    )
+                     st.caption(f"[Link]({item['link']}) | {item['date']}")
+                elif item.get("type") == "social":
+                    platform_label = item.get('platform', 'X.com')
+                    if "Simulated" in platform_label:
+                        st.warning(f"⚠️ Scraping Failed - Using {platform_label}")
+                    
+                    st.markdown(
+                        f"**@{item.get('author', 'unknown')} ({platform_label})** - :{sentiment_color}[{item['sentiment']}]"
+                    )
+                    st.markdown(f"> {item.get('content', '')}")
+                    st.caption(f"[Link]({item.get('url', '#')}) | {item.get('date', '')}")
+                
+                st.divider()
         else:
-            st.caption("No recent news found.")
+            st.caption("No recent news or social posts found.")
 
     event_impact = st.select_slider(
         "Adjust Sentiment Impact",
