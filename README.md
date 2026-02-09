@@ -1,5 +1,7 @@
 # 🪙 BTC Stock Predictor
 
+> **✨ Built with Vibe Coding**: This project was rapidly developed using **AI-assisted "Vibe Coding"** methodologies. The code was generated and refined in real-time collaboration with AI, prioritizing speed and intuition while maintaining a **Rigid Layered Architecture** for production-grade quality.
+
 An advanced financial analytics tool designed to predict stock prices (Miners & Proxy Stocks) based on Bitcoin's price movements. This project leverages historical correlation, beta analysis, and AI-driven sentiment analysis to provide actionable insights.
 
 ## 🧠 Project Mindset & Workflow
@@ -99,7 +101,7 @@ btc_stock_predictor/
 ├── btc_backend/               # ⚙️ Django Project Settings
 ├── predictor/                 # 🧠 Django App & Business Logic
 │   ├── application/           # 🎮 Application Services
-│   ├── core/                  # � Config & Logging
+│   ├── core/                  # 🔧 Config & Logging
 │   ├── domain/                # 📦 Pydantic Models
 │   ├── infrastructure/        # 🔌 External API Implementations
 │   ├── interfaces/            # 📝 Abstract Base Classes
