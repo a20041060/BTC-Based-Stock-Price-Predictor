@@ -1,0 +1,79 @@
+# BTC Stock Predictor - macOS Installation Instructions
+
+Here are the instructions to run the BTC Stock Predictor on your MacBook.
+You can choose between two methods: running locally with Python or using Docker.
+
+---
+
+## Method 1: Easy Run (Recommended for simple setup)
+
+This method uses the included script to set up a virtual environment and install everything for you.
+
+### Prerequisites
+- **Python 3** must be installed. (Open Terminal and type `python3 --version`. If not found, install via Homebrew: `brew install python`)
+
+### Steps
+1. Unzip the folder `btc_predictor_mac`.
+2. Open the **Terminal** app.
+3. Type `cd ` (with a space) and drag the unzipped folder into the terminal window to set the path, then press **Enter**.
+   Example:
+   ```bash
+   cd ~/Downloads/btc_predictor_mac
+   ```
+4. Run the setup script:
+   ```bash
+   chmod +x run_on_mac.sh
+   ./run_on_mac.sh
+   ```
+5. The application will install dependencies and open in your browser automatically.
+
+---
+
+## Method 2: Manual Python Setup
+
+If you prefer to run commands manually:
+
+1. Open Terminal and navigate to the folder:
+   ```bash
+   cd path/to/btc_predictor_mac
+   ```
+2. Create a virtual environment:
+   ```bash
+   python3 -m venv venv
+   ```
+3. Activate the environment:
+   ```bash
+   source venv/bin/activate
+   ```
+4. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+5. Run the app:
+   ```bash
+   streamlit run btc_stock_predictor_ui.py
+   ```
+
+---
+
+## Method 3: Docker (Containerized)
+
+If you have Docker Desktop installed, this is the cleanest method as it keeps your system tidy.
+
+### Steps
+1. Open Terminal and navigate to the folder.
+2. Build the Docker image:
+   ```bash
+   docker build -t btc-predictor .
+   ```
+3. Run the container:
+   ```bash
+   docker run -p 8501:8501 btc-predictor
+   ```
+4. Open your browser and go to: `http://localhost:8501`
+
+---
+
+## Notes
+- **First Run**: The first time you run the app, it may take a moment to download the FinBERT AI model (approx 400MB) for sentiment analysis.
+- **Troubleshooting**: If you encounter issues with "transformers" or "torch", ensure your Python version is 3.10 or newer.

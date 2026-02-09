@@ -1,0 +1,43 @@
+# 🪟 Windows Setup Guide for BTC Stock Predictor
+
+## Prerequisites
+1.  **Python 3.10+**: Download and install from [python.org](https://www.python.org/downloads/).
+    *   ⚠️ **IMPORTANT**: During installation, check the box **"Add Python to PATH"**.
+
+## 🚀 Quick Start (Recommended)
+
+1.  **Unzip the folder** `btc_stock_predictor.zip`.
+2.  Double-click the **`run_on_windows.bat`** file.
+3.  A terminal window will open and automatically:
+    *   Create a virtual environment.
+    *   Install all necessary libraries.
+    *   Launch the application in your default web browser.
+
+## 🛠️ Manual Setup (If the script fails)
+
+1.  Open Command Prompt (cmd) or PowerShell.
+2.  Navigate to the project folder:
+    ```cmd
+    cd path\to\btc_stock_predictor
+    ```
+3.  Create a virtual environment:
+    ```cmd
+    python -m venv venv
+    ```
+4.  Activate the environment:
+    ```cmd
+    venv\Scripts\activate
+    ```
+5.  Install dependencies:
+    ```cmd
+    pip install -r requirements.txt
+    ```
+6.  Run the app:
+    ```cmd
+    streamlit run btc_stock_predictor_ui.py
+    ```
+
+## ❓ Troubleshooting
+
+*   **"Python is not recognized..."**: This means Python is not in your system PATH. Reinstall Python and ensure "Add Python to PATH" is checked.
+*   **Browser doesn't open**: Manually open your browser and go to `http://localhost:8501`.

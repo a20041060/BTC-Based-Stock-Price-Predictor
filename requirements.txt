@@ -1,0 +1,17 @@
+yfinance
+pandas
+numpy
+scikit-learn
+matplotlib
+streamlit
+plotly
+statsmodels
+vaderSentiment
+transformers
+torch
+tf-keras
+requests
+django
+djangorestframework
+django-cors-headers
+Django==4.2.28

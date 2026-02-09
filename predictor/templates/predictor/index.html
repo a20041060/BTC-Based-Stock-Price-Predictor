@@ -1,0 +1,92 @@
+{% extends 'predictor/base.html' %}
+
+{% block sidebar_form %}
+<form method="get" action="{% url 'index' %}">
+    <div class="mb-3">
+        <label for="ticker" class="form-label">Stock Ticker</label>
+        <select class="form-select" id="ticker" name="ticker">
+            <option value="IREN" {% if ticker == 'IREN' %}selected{% endif %}>IREN</option>
+            <option value="MARA" {% if ticker == 'MARA' %}selected{% endif %}>MARA</option>
+            <option value="RIOT" {% if ticker == 'RIOT' %}selected{% endif %}>RIOT</option>
+            <option value="CLSK" {% if ticker == 'CLSK' %}selected{% endif %}>CLSK</option>
+            <option value="HUT" {% if ticker == 'HUT' %}selected{% endif %}>HUT</option>
+            <option value="WULF" {% if ticker == 'WULF' %}selected{% endif %}>WULF</option>
+            <option value="CIFR" {% if ticker == 'CIFR' %}selected{% endif %}>CIFR</option>
+            <option value="BTBT" {% if ticker == 'BTBT' %}selected{% endif %}>BTBT</option>
+            <option value="SDIG" {% if ticker == 'SDIG' %}selected{% endif %}>SDIG</option>
+            <option value="CORZ" {% if ticker == 'CORZ' %}selected{% endif %}>CORZ</option>
+            <option value="MSTR" {% if ticker == 'MSTR' %}selected{% endif %}>MSTR</option>
+            <option value="COIN" {% if ticker == 'COIN' %}selected{% endif %}>COIN</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="target_btc" class="form-label">Target BTC Price ($)</label>
+        <input type="number" class="form-control" id="target_btc" name="target_btc" value="{{ target_btc }}" step="1000">
+    </div>
+    <div class="mb-3">
+        <label for="event_multiplier" class="form-label">Event Multiplier</label>
+        <input type="number" class="form-control" id="event_multiplier" name="event_multiplier" value="{{ event_multiplier }}" step="0.1">
+    </div>
+    <button type="submit" class="btn btn-primary w-100">Update Predictions</button>
+</form>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard: {{ ticker }} Analysis</h1>
+</div>
+
+{% if beta %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">Current BTC</div>
+            <div class="metric-value">${{ current_btc }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">Current {{ ticker }}</div>
+            <div class="metric-value">${{ current_stock }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">Correlation</div>
+            <div class="metric-value">{{ correlation }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card">
+            <div class="metric-label">Beta</div>
+            <div class="metric-value">{{ beta }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Beta Model Prediction</div>
+            <div class="card-body">
+                <h5 class="card-title text-center">${{ pred_beta }}</h5>
+                <p class="card-text text-muted text-center">Based on linear relationship (Beta)</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Power Law Prediction</div>
+            <div class="card-body">
+                <h5 class="card-title text-center">${{ pred_power_law }}</h5>
+                <p class="card-text text-muted text-center">Based on log-log regression</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-warning" role="alert">
+    No data available for {{ ticker }}. Please check the ticker or try again later.
+</div>
+{% endif %}
+{% endblock %}
