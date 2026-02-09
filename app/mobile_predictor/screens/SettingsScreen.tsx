@@ -28,6 +28,7 @@ export const SettingsScreen = ({
     value: { color: isDarkMode ? '#ddd' : '#333' },
     description: { color: isDarkMode ? '#aaa' : '#666' },
     card: { backgroundColor: isDarkMode ? '#1e1e1e' : '#fff' },
+    divider: { backgroundColor: isDarkMode ? '#333' : '#eee' },
   };
 
   return (
@@ -64,7 +65,7 @@ export const SettingsScreen = ({
           Fetch BTC prices directly from Binance API.
         </Text>
 
-        <View style={styles.divider} />
+        <View style={[styles.divider, themeStyles.divider]} />
 
         <View style={styles.settingRow}>
           <Text style={[styles.label, themeStyles.label]}>Direct Stock Fetch (Yahoo)</Text>
@@ -85,7 +86,7 @@ export const SettingsScreen = ({
         <Text style={[styles.sectionHeader, themeStyles.sectionHeader]}>App Info</Text>
         <Text style={[styles.text, themeStyles.text]}>BTC Stock Predictor v1.0</Text>
         <Text style={[styles.text, themeStyles.text]}>Rigid Architecture Mobile Client</Text>
-        <View style={styles.divider} />
+        <View style={[styles.divider, themeStyles.divider]} />
         <Text style={[styles.label, themeStyles.label]}>Backend URL</Text>
         <Text style={[styles.value, themeStyles.value]}>{API_BASE_URL}</Text>
       </Card>

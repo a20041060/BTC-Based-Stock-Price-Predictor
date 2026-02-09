@@ -41,6 +41,9 @@ export const AnalysisScreen = ({ isDarkMode }: AnalysisScreenProps) => {
     targetValue: { color: isDarkMode ? '#eee' : '#333' },
     newsSource: { color: isDarkMode ? '#888' : '#888' },
     divider: { backgroundColor: isDarkMode ? '#333' : '#eee' },
+    tickerOption: { backgroundColor: isDarkMode ? '#333' : '#f0f0f0' },
+    errorBox: { backgroundColor: isDarkMode ? '#3e2723' : '#ffebee', borderColor: isDarkMode ? '#b71c1c' : '#ffcdd2' },
+    errorText: { color: isDarkMode ? '#ffcdd2' : '#c62828' },
   };
 
   const handlePredict = async () => {
@@ -89,7 +92,7 @@ export const AnalysisScreen = ({ isDarkMode }: AnalysisScreenProps) => {
           {STOCK_TICKERS.map(t => (
             <TouchableOpacity 
               key={t} 
-              style={[styles.tickerOption, ticker === t && styles.activeTickerOption]}
+              style={[styles.tickerOption, themeStyles.tickerOption, ticker === t && styles.activeTickerOption]}
               onPress={() => setTicker(t)}
             >
               <Text style={[styles.tickerOptionText, themeStyles.tickerOptionText, ticker === t && styles.activeTickerOptionText]}>{t}</Text>
@@ -144,8 +147,8 @@ export const AnalysisScreen = ({ isDarkMode }: AnalysisScreenProps) => {
       </Card>
 
       {error && (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorBox, themeStyles.errorBox]}>
+          <Text style={[styles.errorText, themeStyles.errorText]}>{error}</Text>
         </View>
       )}
 

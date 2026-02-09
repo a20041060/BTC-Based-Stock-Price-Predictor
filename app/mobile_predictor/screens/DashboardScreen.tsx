@@ -156,7 +156,7 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
   return (
     <ScrollView 
       contentContainerStyle={styles.scrollContent}
-      refreshControl={<RefreshControl refreshing={loadingPrices} onRefresh={fetchMarketPrices} />}
+      refreshControl={<RefreshControl refreshing={loadingPrices} onRefresh={fetchMarketPrices} tintColor={isDarkMode ? "#fff" : "#000"} colors={[isDarkMode ? "#fff" : "#000"]} />}
     >
       <Text style={[styles.headerTitle, themeStyles.headerTitle]}>⚡ Real-Time Market</Text>
       <Text style={[styles.lastUpdated, themeStyles.lastUpdated]}>Pull to refresh • Auto-updates 30s</Text>

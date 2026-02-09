@@ -27,6 +27,73 @@ st.markdown("Analyze how different miners and proxy stocks correlate with each o
 with st.sidebar:
     st.header("⚙️ Configuration")
 
+    # Dark Mode Toggle
+    if 'dark_mode' not in st.session_state:
+        st.session_state.dark_mode = True
+
+    is_dark_mode = st.toggle("Dark Mode 🌙", key="dark_mode")
+
+    if is_dark_mode:
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #0E1117;
+                color: #FAFAFA;
+            }
+            section[data-testid="stSidebar"] {
+                background-color: #262730;
+                color: #FAFAFA;
+            }
+            div[data-testid="stSidebarNav"] a, div[data-testid="stSidebarNav"] span {
+                color: #FAFAFA !important;
+            }
+            /* Top Header (fix white edge) */
+            header[data-testid="stHeader"] {
+                background-color: #0E1117;
+            }
+            div[data-testid="stMetricValue"] {
+                color: #FAFAFA;
+            }
+            div[data-testid="stWidgetLabel"] p {
+                color: #FAFAFA !important;
+            }
+            div[data-testid="stMetricLabel"] p {
+                 color: #FAFAFA !important;
+            }
+            div[data-testid="stMetricLabel"] label {
+                 color: #FAFAFA !important;
+            }
+            div[data-testid="stMarkdownContainer"] p {
+                 color: #FAFAFA;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                color: #FAFAFA !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #FFFFFF;
+                color: #000000;
+            }
+            section[data-testid="stSidebar"] {
+                background-color: #F0F2F6;
+                color: #000000;
+            }
+            div[data-testid="stMetricValue"] {
+                color: #000000;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
     available_tickers = [
         "BTC-USD",
         "IREN",

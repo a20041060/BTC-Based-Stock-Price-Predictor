@@ -39,7 +39,10 @@ with st.sidebar:
     st.header("⚙️ Configuration")
 
     # Dark Mode Toggle
-    is_dark_mode = st.toggle("Dark Mode 🌙", value=True)
+    if 'dark_mode' not in st.session_state:
+        st.session_state.dark_mode = True
+
+    is_dark_mode = st.toggle("Dark Mode 🌙", key="dark_mode")
     if is_dark_mode:
         st.markdown(
             """
@@ -52,9 +55,36 @@ with st.sidebar:
                 background-color: #262730;
                 color: #FAFAFA;
             }
+            /* Sidebar Nav Title/Links */
+            div[data-testid="stSidebarNav"] a, div[data-testid="stSidebarNav"] span {
+                color: #FAFAFA !important;
+            }
+            /* Top Header (fix white edge) */
+            header[data-testid="stHeader"] {
+                background-color: #0E1117;
+            }
             /* Cards/Containers overrides might be needed */
             div[data-testid="stMetricValue"] {
                 color: #FAFAFA;
+            }
+            /* Widget Labels */
+            div[data-testid="stWidgetLabel"] p {
+                color: #FAFAFA !important;
+            }
+            /* Metric Labels */
+            div[data-testid="stMetricLabel"] p {
+                 color: #FAFAFA !important;
+            }
+            div[data-testid="stMetricLabel"] label {
+                 color: #FAFAFA !important;
+            }
+             /* Markdown Text */
+            div[data-testid="stMarkdownContainer"] p {
+                 color: #FAFAFA;
+            }
+             /* Headers */
+            h1, h2, h3, h4, h5, h6 {
+                color: #FAFAFA !important;
             }
             </style>
             """,
