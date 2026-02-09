@@ -30,12 +30,13 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
       const response = await axios.get(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`, { timeout: 5000 });
       const result = response.data.quoteResponse.result[0];
       
-      // Map Yahoo marketState to our format if needed
-      // Yahoo returns: "PRE", "REGULAR", "POST", "CLOSED" (usually)
+      // Map Yahoo marketState to our format
+      let marketState = result.marketState;
+      if (marketState === 'REGULAR') marketState = 'OPEN';
       
       return {
         price: result.regularMarketPrice,
-        market_state: result.marketState,
+        market_state: marketState,
         regular_market_price: result.regularMarketPrice,
         pre_market_price: result.preMarketPrice,
         post_market_price: result.postMarketPrice
@@ -115,9 +116,11 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks }: DashboardSc
     }
 
     // Extended Info Object
-    const isMarketOpen = data.market_state === 'OPEN' || data.market_state === 'REGULAR';
-    const showPre = !isMarketOpen && (data.market_state === 'PRE' || data.market_state === 'CLOSED') && data.pre_market_price;
-    const showPost = !isMarketOpen && (data.market_state === 'POST' || data.market_state === 'CLOSED') && data.post_market_price;
+    const state = data.market_state ? data.market_state.toUpperCase() : 'CLOSED';
+    const isMarketOpen = state === 'OPEN' || state === 'REGULAR';
+    
+    const showPre = !isMarketOpen && (state === 'PRE' || state === 'CLOSED') && !!data.pre_market_price;
+    const showPost = !isMarketOpen && (state === 'POST' || state === 'CLOSED') && !!data.post_market_price;
 
     // Logic: If Closed, show relevant one. Usually Yahoo gives both or valid ones.
     // Requirement: "when US stock market open dont show the pre-market and after-market price"
