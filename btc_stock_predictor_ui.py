@@ -95,6 +95,17 @@ with st.sidebar:
                 color: #FAFAFA;
                 font-weight: 400;
             }
+            /* Buttons */
+            div[data-testid="stButton"] button {
+                background-color: #262730;
+                color: #FAFAFA;
+                border: 1px solid #464b5d;
+            }
+            div[data-testid="stButton"] button:hover {
+                background-color: #363945;
+                color: #FAFAFA;
+                border-color: #FAFAFA;
+            }
             </style>
             """,
             unsafe_allow_html=True
@@ -157,9 +168,28 @@ with st.sidebar:
     else:
         st.caption("ℹ️ Using Binance (Free) for BTC and Yahoo (Delayed) for Stocks.")
 
-    target_btc_price = st.number_input(
-        "Target BTC Price ($)", value=70500.0, step=1000.0, min_value=1.0
-    )
+    # Dynamic Target Price with Reset
+    btc_info = market_data_provider.get_extended_stock_info("BTC-USD")
+    current_btc = btc_info.get("price", 95000.0) if btc_info else 95000.0
+
+    if "target_btc_input" not in st.session_state:
+        st.session_state.target_btc_input = float(current_btc)
+
+    def reset_target_btc():
+        st.session_state.target_btc_input = float(current_btc)
+
+    t_col1, t_col2 = st.columns([0.8, 0.2])
+    with t_col1:
+        target_btc_price = st.number_input(
+            "Target BTC Price ($)", 
+            key="target_btc_input",
+            step=500.0, 
+            min_value=1.0,
+            format="%.0f"
+        )
+    with t_col2:
+        st.markdown("<div style='height: 28px'></div>", unsafe_allow_html=True)
+        st.button("↺", on_click=reset_target_btc, help=f"Reset to Current: ${current_btc:,.0f}")
     
     start_date_input = st.date_input(
         "Start Date for Analysis", value=pd.to_datetime("2024-01-01")
