@@ -86,6 +86,15 @@ with st.sidebar:
             h1, h2, h3, h4, h5, h6 {
                 color: #FAFAFA !important;
             }
+            /* Rename Sidebar Nav Item */
+            [data-testid="stSidebarNav"] ul li:first-child a span {
+                display: none;
+            }
+            [data-testid="stSidebarNav"] ul li:first-child a::after {
+                content: "BTC Stocks Predictor";
+                color: #FAFAFA;
+                font-weight: 400;
+            }
             </style>
             """,
             unsafe_allow_html=True
@@ -97,6 +106,15 @@ with st.sidebar:
             .stApp {
                 background-color: #FFFFFF;
                 color: #000000;
+            }
+            /* Rename Sidebar Nav Item */
+            [data-testid="stSidebarNav"] ul li:first-child a span {
+                display: none;
+            }
+            [data-testid="stSidebarNav"] ul li:first-child a::after {
+                content: "BTC Stocks Predictor";
+                color: #000000;
+                font-weight: 400;
             }
             section[data-testid="stSidebar"] {
                 background-color: #F0F2F6;
