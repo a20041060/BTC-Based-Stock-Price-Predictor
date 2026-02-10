@@ -7,4 +7,5 @@ urlpatterns = [
     path('api/predict/', views.api_predict, name='api_predict'),
     path('api/sentiment/', views.api_sentiment, name='api_sentiment'),
     path('api/market-prices/', views.api_market_prices, name='api_market_prices'),
+    path('api/fear-and-greed/', views.api_fear_and_greed, name='api_fear_and_greed'),
 ]

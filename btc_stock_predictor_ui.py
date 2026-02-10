@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
 from datetime import datetime
 from predictor.core.config import settings
 from predictor.core.logger import get_logger
@@ -292,43 +293,94 @@ with st.sidebar:
     st.divider()
     st.caption("Powered by Yahoo Finance & Scikit-Learn")
 
-# --- Real-Time Dashboard ---
-st.subheader("⚡ Real-Time Market Prices")
-market_tickers = ["BTC-USD", "IREN", "APLD", "HUT", "MARA", "CLSK", "COIN", "MSTR"]
-cols = st.columns(4)
+# --- Main Layout for Indicators ---
+fng_index = market_data_provider.get_fear_and_greed_index()
+main_col1, main_col2 = st.columns([1, 2])
 
-for i, ticker in enumerate(market_tickers):
-    info = market_data_provider.get_extended_stock_info(ticker)
+# --- Fear and Greed Index (Left Column) ---
+with main_col1:
+    if fng_index:
+        st.subheader("😨 Crypto Fear & Greed")
+        fng_val = int(fng_index['value'])
+        fng_class = fng_index['value_classification']
         
-    with cols[i % 4]:
-        if not info or info.get("price") is None:
-            st.metric(label=ticker, value="N/A")
-        else:
-            price = info.get("price")
-            previous_close = info.get("previous_close")
-            
-            delta = None
-            if previous_close and price:
-                change = price - previous_close
-                pct_change = (change / previous_close) * 100
-                delta = f"{pct_change:.2f}%"
+        # Create Gauge Chart
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = fng_val,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': fng_class, 'font': {'size': 24}},
+            gauge = {
+                'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+                'bar': {'color': "rgba(0,0,0,0)"}, # Transparent bar
+                'bgcolor': "white",
+                'borderwidth': 2,
+                'bordercolor': "gray",
+                'steps': [
+                    {'range': [0, 20], 'color': "#FF4136"},      # Extreme Fear (Red)
+                    {'range': [20, 40], 'color': "#FF851B"},     # Fear (Orange)
+                    {'range': [40, 60], 'color': "#FFDC00"},     # Neutral (Yellow)
+                    {'range': [60, 80], 'color': "#2ECC40"},     # Greed (Light Green)
+                    {'range': [80, 100], 'color': "#01FF70"}],   # Extreme Greed (Green)
+                'threshold': {
+                    'line': {'color': "black", 'width': 4},
+                    'thickness': 0.75,
+                    'value': fng_val
+                }
+            }
+        ))
+        
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font={'color': "white" if is_dark_mode else "black"},
+            margin=dict(l=20, r=20, t=50, b=20),
+            height=300
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
 
-            st.metric(label=ticker, value=f"${price:,.2f}", delta=delta)
+# --- Real-Time Dashboard (Right Column) ---
+with main_col2:
+    st.subheader("⚡ Real-Time Market Prices")
+    market_tickers = ["BTC-USD", "IREN", "APLD", "HUT", "MARA", "CLSK", "COIN", "MSTR"]
+    
+    # Nested columns for the grid
+    # Streamlit supports nesting columns inside columns in recent versions
+    cols = st.columns(4)
+
+    for i, ticker in enumerate(market_tickers):
+        info = market_data_provider.get_extended_stock_info(ticker)
             
-            # Show Extended Hours if Market is NOT Open
-            market_state = info.get("market_state")
-            if market_state != "OPEN":
-                pre_price = info.get("pre_market_price")
-                post_price = info.get("post_market_price")
+        with cols[i % 4]:
+            if not info or info.get("price") is None:
+                st.metric(label=ticker, value="N/A")
+            else:
+                price = info.get("price")
+                previous_close = info.get("previous_close")
                 
-                # Logic: Show relevant extended hours prices
-                if market_state == "PRE":
-                    if pre_price: st.caption(f"🌑 Pre-Market: ${pre_price:,.2f}")
-                elif market_state == "POST":
-                    if post_price: st.caption(f"🌑 After-Market: ${post_price:,.2f}")
-                else: # CLOSED
-                    if pre_price: st.caption(f"🌑 Pre-Market: ${pre_price:,.2f}")
-                    if post_price: st.caption(f"🌑 After-Market: ${post_price:,.2f}")
+                delta = None
+                if previous_close and price:
+                    change = price - previous_close
+                    pct_change = (change / previous_close) * 100
+                    delta = f"{pct_change:.2f}%"
+
+                st.metric(label=ticker, value=f"${price:,.2f}", delta=delta)
+                
+                # Show Extended Hours if Market is NOT Open
+                market_state = info.get("market_state")
+                if market_state != "OPEN":
+                    pre_price = info.get("pre_market_price")
+                    post_price = info.get("post_market_price")
+                    
+                    # Logic: Show relevant extended hours prices
+                    if market_state == "PRE":
+                        if pre_price: st.caption(f"🌑 Pre: ${pre_price:,.2f}")
+                    elif market_state == "POST":
+                        if post_price: st.caption(f"🌑 Post: ${post_price:,.2f}")
+                    else: # CLOSED
+                        if pre_price: st.caption(f"🌑 Pre: ${pre_price:,.2f}")
+                        if post_price: st.caption(f"🌑 Post: ${post_price:,.2f}")
 
 st.divider()
 

@@ -160,6 +160,24 @@ class MarketDataProvider(IMarketDataProvider):
                 "previous_close": None
             }
 
+    def get_fear_and_greed_index(self) -> Optional[dict]:
+        """Fetches the Crypto Fear and Greed Index from alternative.me."""
+        try:
+            response = requests.get("https://api.alternative.me/fng/", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("data") and len(data["data"]) > 0:
+                    item = data["data"][0]
+                    return {
+                        "value": int(item["value"]),
+                        "value_classification": item["value_classification"],
+                        "timestamp": int(item["timestamp"]),
+                        "time_until_update": int(data.get("metadata", {}).get("time_until_update", 0))
+                    }
+        except Exception as e:
+            logger.warning(f"Fear and Greed API failed: {e}")
+        return None
+
     def _get_yfinance_price(self, ticker: str) -> Optional[float]:
         try:
             t = yf.Ticker(ticker)
