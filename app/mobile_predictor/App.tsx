@@ -38,7 +38,9 @@ export default function App() {
         {activeTab === 'dashboard' && (
           <DashboardScreen 
             useDirectFetch={useDirectFetch} 
+            setUseDirectFetch={setUseDirectFetch}
             useDirectStocks={useDirectStocks} 
+            setUseDirectStocks={setUseDirectStocks}
             isDarkMode={isDarkMode}
           />
         )}

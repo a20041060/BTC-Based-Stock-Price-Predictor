@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, StyleSheet, Switch } from 'react-native';
 import axios from 'axios';
 import { Card } from '../components/Card';
 import { API_BASE_URL, STOCK_TICKERS } from '../constants';
@@ -7,11 +7,13 @@ import { MarketPrices, ExtendedPriceInfo } from '../types';
 
 interface DashboardScreenProps {
   useDirectFetch: boolean;
+  setUseDirectFetch: (val: boolean) => void;
   useDirectStocks: boolean;
+  setUseDirectStocks: (val: boolean) => void;
   isDarkMode?: boolean;
 }
 
-export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }: DashboardScreenProps) => {
+export const DashboardScreen = ({ useDirectFetch, setUseDirectFetch, useDirectStocks, setUseDirectStocks, isDarkMode }: DashboardScreenProps) => {
   const [marketPrices, setMarketPrices] = useState<MarketPrices>({});
   const [loadingPrices, setLoadingPrices] = useState(false);
 
@@ -47,21 +49,26 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
 
   const fetchDirectStockPrice = async (ticker: string) => {
     try {
-      // Use quote endpoint for extended hours data
-      const response = await axios.get(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`, { timeout: 5000 });
-      const result = response.data.quoteResponse.result[0];
+      // Use chart endpoint as it's more reliable than quote for public access
+      const response = await axios.get(`https://query2.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`, { timeout: 5000 });
+      const result = response.data.chart.result[0];
+      const meta = result.meta;
+      const price = meta.regularMarketPrice;
+      const previousClose = meta.chartPreviousClose;
       
-      // Map Yahoo marketState to our format
-      let marketState = result.marketState;
-      if (marketState === 'REGULAR') marketState = 'OPEN';
-      
+      // Calculate percent change
+      let percentChange = 0;
+      if (previousClose && price) {
+          percentChange = ((price - previousClose) / previousClose) * 100;
+      }
+
       return {
-        price: result.regularMarketPrice,
-        market_state: marketState,
-        regular_market_price: result.regularMarketPrice,
-        pre_market_price: result.preMarketPrice,
-        post_market_price: result.postMarketPrice,
-        percent_change: result.regularMarketChangePercent
+        price: price,
+        market_state: 'OPEN', // Simplified
+        regular_market_price: price,
+        pre_market_price: null,
+        post_market_price: null,
+        percent_change: percentChange
       } as ExtendedPriceInfo;
     } catch (err) {
       console.warn(`Direct Yahoo fetch failed for ${ticker}:`, err);
@@ -173,13 +180,34 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
     );
   };
 
+  const toggleDataSource = (value: boolean) => {
+    setUseDirectFetch(value);
+    setUseDirectStocks(value);
+  };
+
+  const isPublicMode = useDirectFetch && useDirectStocks;
+
   return (
     <ScrollView 
       contentContainerStyle={styles.scrollContent}
       refreshControl={<RefreshControl refreshing={loadingPrices} onRefresh={fetchMarketPrices} tintColor={isDarkMode ? "#fff" : "#000"} colors={[isDarkMode ? "#fff" : "#000"]} />}
     >
-      <Text style={[styles.headerTitle, themeStyles.headerTitle]}>⚡ Real-Time Market</Text>
-      <Text style={[styles.lastUpdated, themeStyles.lastUpdated]}>Pull to refresh • Auto-updates 30s</Text>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15, paddingHorizontal: 5 }}>
+        <View>
+          <Text style={[styles.headerTitle, themeStyles.headerTitle]}>Dashboard</Text>
+          <Text style={[styles.lastUpdated, themeStyles.lastUpdated]}>
+            Source: {isPublicMode ? 'Public Cloud APIs (Mobile)' : 'Local Backend (WiFi)'}
+          </Text>
+        </View>
+        <Switch
+          trackColor={{ false: "#767577", true: "#81b0ff" }}
+          thumbColor={isPublicMode ? "#f5dd4b" : "#f4f3f4"}
+          onValueChange={toggleDataSource}
+          value={isPublicMode}
+        />
+      </View>
+      
+      <Text style={[styles.headerTitle, themeStyles.headerTitle, { fontSize: 24, marginBottom: 10 }]}>Market Overview</Text>
       
       <View style={styles.gridContainer}>
         {Object.entries(marketPrices).length > 0 ? (
