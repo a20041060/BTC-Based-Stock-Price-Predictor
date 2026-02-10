@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, RefreshControl, StyleSheet, Switch } from 'react-native';
 import axios from 'axios';
 import { Card } from '../components/Card';
+import { Gauge } from '../components/Gauge';
 import { API_BASE_URL, STOCK_TICKERS } from '../constants';
 import { MarketPrices, ExtendedPriceInfo } from '../types';
 
@@ -15,6 +16,7 @@ interface DashboardScreenProps {
 
 export const DashboardScreen = ({ useDirectFetch, setUseDirectFetch, useDirectStocks, setUseDirectStocks, isDarkMode }: DashboardScreenProps) => {
   const [marketPrices, setMarketPrices] = useState<MarketPrices>({});
+  const [fngIndex, setFngIndex] = useState<{value: number, value_classification: string} | null>(null);
   const [loadingPrices, setLoadingPrices] = useState(false);
 
   const themeStyles = {
@@ -98,11 +100,35 @@ export const DashboardScreen = ({ useDirectFetch, setUseDirectFetch, useDirectSt
           })
         : Promise.resolve(null);
 
-      const [btcResult, backendResult, ...stockResults] = await Promise.all([
+      // 4. Fear & Greed Fetch
+      const fngPromise = (async () => {
+        try {
+          if (useDirectFetch) {
+            const res = await axios.get('https://api.alternative.me/fng/');
+            if (res.data?.data?.length > 0) {
+              return { 
+                value: parseInt(res.data.data[0].value), 
+                value_classification: res.data.data[0].value_classification 
+              };
+            }
+          } else {
+             const res = await axios.get(`${API_BASE_URL}/api/fear-and-greed/`);
+             return res.data && res.data.value ? res.data : null;
+          }
+        } catch(e) { console.warn("FnG err", e); return null; }
+        return null;
+      })();
+
+      const [btcResult, backendResult, fngResult, ...stockResults] = await Promise.all([
         btcPromise,
         backendPromise,
+        fngPromise,
         ...stockPromises
       ]);
+
+      if (fngResult) {
+          setFngIndex(fngResult);
+      }
 
       // Process Backend Data first (as base)
       if (backendResult && backendResult.data) {
@@ -207,19 +233,38 @@ export const DashboardScreen = ({ useDirectFetch, setUseDirectFetch, useDirectSt
         />
       </View>
       
-      <Text style={[styles.headerTitle, themeStyles.headerTitle, { fontSize: 24, marginBottom: 10 }]}>Market Overview</Text>
-      
-      <View style={styles.gridContainer}>
-        {Object.entries(marketPrices).length > 0 ? (
-          Object.entries(marketPrices).map(([symbol, price]) => (
-            <Card key={symbol} style={[styles.priceCard, themeStyles.card]}>
-              <Text style={[styles.tickerText, themeStyles.tickerText]}>{symbol}</Text>
-              {renderPriceInfo(symbol, price)}
-            </Card>
-          ))
-        ) : (
-          <Text style={[styles.loadingText, themeStyles.loadingText]}>Loading market data...</Text>
-        )}
+      <View style={{ flexDirection: 'column' }}>
+          {/* Top: Gauge */}
+          {fngIndex && (
+              <View style={{ marginBottom: 20 }}>
+                  <Card style={[themeStyles.card, { width: '100%', padding: 5, alignItems: 'center', minHeight: 180 }]}>
+                      <Gauge value={fngIndex.value} label={fngIndex.value_classification} isDarkMode={isDarkMode} />
+                  </Card>
+              </View>
+          )}
+
+          {/* Bottom: Market List */}
+          <View>
+              <Text style={[styles.headerTitle, themeStyles.headerTitle, { fontSize: 20, marginBottom: 10 }]}>
+                  {fngIndex ? "Real-Time" : "Market Overview"}
+              </Text>
+              
+              <View style={styles.gridContainer}>
+                  {Object.entries(marketPrices).length > 0 ? (
+                  Object.entries(marketPrices).map(([symbol, price]) => (
+                      <Card key={symbol} style={[
+                          styles.priceCard, 
+                          themeStyles.card
+                      ]}>
+                      <Text style={[styles.tickerText, themeStyles.tickerText]}>{symbol}</Text>
+                      {renderPriceInfo(symbol, price)}
+                      </Card>
+                  ))
+                  ) : (
+                  <Text style={[styles.loadingText, themeStyles.loadingText]}>Loading...</Text>
+                  )}
+              </View>
+          </View>
       </View>
     </ScrollView>
   );

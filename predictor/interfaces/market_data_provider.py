@@ -35,3 +35,8 @@ class IMarketDataProvider(ABC):
     def get_news(self, ticker: str) -> List[NewsItem]:
         """Fetches news for a specific ticker."""
         pass
+
+    @abstractmethod
+    def get_fear_and_greed_index(self) -> Optional[dict]:
+        """Fetches the Crypto Fear and Greed Index."""
+        pass

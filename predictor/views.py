@@ -87,6 +87,15 @@ def api_market_prices(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@require_http_methods(["GET"])
+def api_fear_and_greed(request):
+    """API endpoint for Fear and Greed Index."""
+    try:
+        index_data = market_data_provider.get_fear_and_greed_index()
+        return JsonResponse(index_data if index_data else {}, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 def index(request):
     # Default values
     ticker = request.GET.get('ticker', 'IREN')
