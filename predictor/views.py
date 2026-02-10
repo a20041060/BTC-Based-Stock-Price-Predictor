@@ -5,13 +5,13 @@ import datetime
 import pandas as pd
 from predictor.infrastructure.market_data import MarketDataProvider
 from predictor.infrastructure.sentiment_analysis import SentimentAnalyzer
-from predictor.infrastructure.social_media_scraper import NitterScraperProvider
+from predictor.infrastructure.social_media_scraper import XApiProvider
 from predictor.application.prediction_service import PredictionService
 
 # Initialize dependencies (Could be done in apps.py or using a DI container)
 market_data_provider = MarketDataProvider()
 sentiment_analyzer = SentimentAnalyzer()
-social_media_provider = NitterScraperProvider()
+social_media_provider = XApiProvider()
 prediction_service = PredictionService(market_data_provider, sentiment_analyzer, social_media_provider)
 
 @require_http_methods(["GET"])

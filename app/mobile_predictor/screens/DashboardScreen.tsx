@@ -27,11 +27,21 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
 
   const fetchDirectBTCPrice = async () => {
     try {
-      const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT', { timeout: 5000 });
-      return parseFloat(response.data.price);
+      const response = await axios.get('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT', { timeout: 5000 });
+      return {
+        price: parseFloat(response.data.lastPrice),
+        market_state: 'OPEN',
+        percent_change: parseFloat(response.data.priceChangePercent)
+      } as ExtendedPriceInfo;
     } catch (err) {
       console.warn("Direct Binance fetch failed:", err);
-      return null;
+      // Fallback to simple price if 24hr fails
+      try {
+         const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT', { timeout: 5000 });
+         return parseFloat(response.data.price);
+      } catch (e) {
+         return null;
+      }
     }
   };
 
@@ -50,7 +60,8 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
         market_state: marketState,
         regular_market_price: result.regularMarketPrice,
         pre_market_price: result.preMarketPrice,
-        post_market_price: result.postMarketPrice
+        post_market_price: result.postMarketPrice,
+        percent_change: result.regularMarketChangePercent
       } as ExtendedPriceInfo;
     } catch (err) {
       console.warn(`Direct Yahoo fetch failed for ${ticker}:`, err);
@@ -136,11 +147,20 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
     // Logic: If Closed, show relevant one. Usually Yahoo gives both or valid ones.
     // Requirement: "when US stock market open dont show the pre-market and after-market price"
     
+    const percentChange = data.percent_change;
+    const changeColor = percentChange && percentChange >= 0 ? '#4caf50' : '#f44336';
+
     return (
       <View style={{ alignItems: 'center' }}>
         <Text style={[styles.priceText, themeStyles.priceText]}>
           ${data.price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) ?? 'N/A'}
         </Text>
+        
+        {percentChange !== undefined && (
+             <Text style={{ color: changeColor, fontSize: 12, fontWeight: '600', marginBottom: 2 }}>
+                {percentChange > 0 ? '+' : ''}{percentChange.toFixed(2)}%
+             </Text>
+        )}
         
         {showPre && (
           <Text style={[styles.extendedText, themeStyles.extendedText]}>Pre: ${data.pre_market_price?.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</Text>

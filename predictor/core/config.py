@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     # API Keys
     FINNHUB_API_KEY: Optional[str] = Field(default=None, description="Finnhub API Key for stock data")
+    X_API_BEARER_TOKEN: Optional[str] = Field(default=None, description="X (Twitter) API Bearer Token")
     
     # Model Configuration
     USE_TRANSFORMERS: bool = Field(default=True, description="Whether to use HuggingFace Transformers")

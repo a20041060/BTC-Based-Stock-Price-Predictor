@@ -25,6 +25,8 @@ export interface ExtendedPriceInfo {
   pre_market_price?: number | null;
   post_market_price?: number | null;
   regular_market_price?: number;
+  previous_close?: number;
+  percent_change?: number;
 }
 
 export interface MarketPrices {

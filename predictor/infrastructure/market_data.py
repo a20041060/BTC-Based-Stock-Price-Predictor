@@ -43,17 +43,37 @@ class MarketDataProvider(IMarketDataProvider):
         return self._get_yfinance_price(ticker)
 
     def get_extended_stock_info(self, ticker: str) -> Dict[str, Any]:
-        """Fetches detailed stock info including pre/post market prices."""
+        """Fetches detailed stock info including pre/post market prices and previous close."""
         try:
             # Check for Crypto
             if ticker == "BTC-USD":
+                # Try to get 24hr stats from Binance for price and previous close
+                try:
+                    response = requests.get("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT", timeout=5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        price = float(data["lastPrice"])
+                        prev_close = float(data["prevClosePrice"])
+                        return {
+                            "price": price,
+                            "market_state": "OPEN", # Crypto is always open
+                            "regular_market_price": price,
+                            "pre_market_price": None,
+                            "post_market_price": None,
+                            "previous_close": prev_close
+                        }
+                except Exception as e:
+                    logger.warning(f"Binance 24hr API failed: {e}")
+
+                # Fallback
                 price = self.get_realtime_btc_price()
                 return {
                     "price": price,
                     "market_state": "OPEN", # Crypto is always open
                     "regular_market_price": price,
                     "pre_market_price": None,
-                    "post_market_price": None
+                    "post_market_price": None,
+                    "previous_close": None
                 }
 
             # For Stocks
@@ -88,6 +108,7 @@ class MarketDataProvider(IMarketDataProvider):
                 current_price = info.get('currentPrice') or info.get('regularMarketPrice')
                 pre_price = info.get('preMarketPrice')
                 post_price = info.get('postMarketPrice')
+                previous_close = info.get('previousClose')
                 
                 # Try to use Yahoo's marketState if available
                 yahoo_state = info.get('marketState')
@@ -103,7 +124,8 @@ class MarketDataProvider(IMarketDataProvider):
                     "market_state": market_state,
                     "regular_market_price": info.get('regularMarketPrice'),
                     "pre_market_price": pre_price,
-                    "post_market_price": post_price
+                    "post_market_price": post_price,
+                    "previous_close": previous_close
                 }
             except Exception as e:
                 logger.warning(f"Failed to fetch full info for {ticker}, falling back to fast_info: {e}")
@@ -115,7 +137,8 @@ class MarketDataProvider(IMarketDataProvider):
                 "market_state": market_state,
                 "regular_market_price": price,
                 "pre_market_price": None,
-                "post_market_price": None
+                "post_market_price": None,
+                "previous_close": None
             }
 
         except Exception as e:
@@ -123,7 +146,8 @@ class MarketDataProvider(IMarketDataProvider):
             return {
                 "price": None,
                 "market_state": "CLOSED",
-                "error": str(e)
+                "error": str(e),
+                "previous_close": None
             }
 
     def _get_yfinance_price(self, ticker: str) -> Optional[float]:

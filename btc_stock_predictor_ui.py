@@ -5,7 +5,7 @@ from predictor.core.config import settings
 from predictor.core.logger import get_logger
 from predictor.infrastructure.market_data import MarketDataProvider
 from predictor.infrastructure.sentiment_analysis import SentimentAnalyzer
-from predictor.infrastructure.social_media_scraper import NitterScraperProvider
+from predictor.infrastructure.social_media_scraper import XApiProvider
 from predictor.application.prediction_service import PredictionService
 
 # --- Initialize Dependencies ---
@@ -16,7 +16,7 @@ logger = get_logger("streamlit_app")
 def get_prediction_service():
     market_data_provider = MarketDataProvider()
     sentiment_analyzer = SentimentAnalyzer()
-    social_media_provider = NitterScraperProvider()
+    social_media_provider = XApiProvider()
     return PredictionService(market_data_provider, sentiment_analyzer, social_media_provider)
 
 prediction_service = get_prediction_service()
@@ -257,7 +257,15 @@ for i, ticker in enumerate(market_tickers):
             st.metric(label=ticker, value="N/A")
         else:
             price = info.get("price")
-            st.metric(label=ticker, value=f"${price:,.2f}")
+            previous_close = info.get("previous_close")
+            
+            delta = None
+            if previous_close and price:
+                change = price - previous_close
+                pct_change = (change / previous_close) * 100
+                delta = f"{pct_change:.2f}%"
+
+            st.metric(label=ticker, value=f"${price:,.2f}", delta=delta)
             
             # Show Extended Hours if Market is NOT Open
             market_state = info.get("market_state")

@@ -1,25 +1,21 @@
 import logging
 import sys
-from predictor.infrastructure.social_media_scraper import NitterScraperProvider
+from predictor.infrastructure.social_media_scraper import XApiProvider
 
 # Configure logging to see what's happening
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 logger = logging.getLogger("verify_scraping")
 
 def verify():
-    print("--- Verifying X.com Scraping ---")
+    print("--- Verifying X.com API ---")
     
-    provider = NitterScraperProvider()
+    provider = XApiProvider()
     
-    # check if scraper is initialized
-    if provider.scraper:
-        print("✅ ntscraper library is loaded.")
-        
-        # Try to force a specific instance if auto-discovery failed
-        # provider.scraper.instance = "https://nitter.privacydev.net" 
+    # check if token is present
+    if provider.bearer_token:
+        print("✅ X API Bearer Token is set.")
     else:
-        print("❌ ntscraper library is NOT loaded (using mock).")
-        return
+        print("❌ X API Bearer Token is NOT set (using mock).")
 
     query = "Bitcoin"
     print(f"Attempting to scrape query: '{query}'...")
