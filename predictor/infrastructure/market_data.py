@@ -54,13 +54,15 @@ class MarketDataProvider(IMarketDataProvider):
                         data = response.json()
                         price = float(data["lastPrice"])
                         prev_close = float(data["prevClosePrice"])
+                        pct_change = float(data["priceChangePercent"])
                         return {
                             "price": price,
                             "market_state": "OPEN", # Crypto is always open
                             "regular_market_price": price,
                             "pre_market_price": None,
                             "post_market_price": None,
-                            "previous_close": prev_close
+                            "previous_close": prev_close,
+                            "percent_change": pct_change
                         }
                 except Exception as e:
                     logger.warning(f"Binance 24hr API failed: {e}")
@@ -73,7 +75,8 @@ class MarketDataProvider(IMarketDataProvider):
                     "regular_market_price": price,
                     "pre_market_price": None,
                     "post_market_price": None,
-                    "previous_close": None
+                    "previous_close": None,
+                    "percent_change": None
                 }
 
             # For Stocks
@@ -118,6 +121,11 @@ class MarketDataProvider(IMarketDataProvider):
                     elif yahoo_state in ["PRE", "POST", "CLOSED"]:
                         market_state = yahoo_state
                 
+                # Calculate percent change
+                percent_change = None
+                if current_price and previous_close and previous_close > 0:
+                    percent_change = ((current_price - previous_close) / previous_close) * 100
+                
                 # If info fetch worked, use it
                 return {
                     "price": current_price,
@@ -125,7 +133,8 @@ class MarketDataProvider(IMarketDataProvider):
                     "regular_market_price": info.get('regularMarketPrice'),
                     "pre_market_price": pre_price,
                     "post_market_price": post_price,
-                    "previous_close": previous_close
+                    "previous_close": previous_close,
+                    "percent_change": percent_change
                 }
             except Exception as e:
                 logger.warning(f"Failed to fetch full info for {ticker}, falling back to fast_info: {e}")
@@ -138,7 +147,8 @@ class MarketDataProvider(IMarketDataProvider):
                 "regular_market_price": price,
                 "pre_market_price": None,
                 "post_market_price": None,
-                "previous_close": None
+                "previous_close": None,
+                "percent_change": None
             }
 
         except Exception as e:

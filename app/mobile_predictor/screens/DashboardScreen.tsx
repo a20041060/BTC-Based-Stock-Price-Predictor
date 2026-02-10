@@ -148,7 +148,7 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
     // Requirement: "when US stock market open dont show the pre-market and after-market price"
     
     const percentChange = data.percent_change;
-    const changeColor = percentChange && percentChange >= 0 ? '#4caf50' : '#f44336';
+    const changeColor = (percentChange ?? 0) >= 0 ? '#4caf50' : '#f44336';
 
     return (
       <View style={{ alignItems: 'center' }}>
@@ -158,7 +158,7 @@ export const DashboardScreen = ({ useDirectFetch, useDirectStocks, isDarkMode }:
         
         {percentChange !== undefined && (
              <Text style={{ color: changeColor, fontSize: 12, fontWeight: '600', marginBottom: 2 }}>
-                {percentChange > 0 ? '+' : ''}{percentChange.toFixed(2)}%
+                {percentChange > 0 ? '↑' : percentChange < 0 ? '↓' : ''} {percentChange.toFixed(2)}%
              </Text>
         )}
         

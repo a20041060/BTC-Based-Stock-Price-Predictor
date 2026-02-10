@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import axios from 'axios';
 import { Card } from '../components/Card';
@@ -13,6 +13,7 @@ interface AnalysisScreenProps {
 export const AnalysisScreen = ({ isDarkMode }: AnalysisScreenProps) => {
   const [ticker, setTicker] = useState('IREN');
   const [targetBtc, setTargetBtc] = useState('100000');
+  const [currentBtcPrice, setCurrentBtcPrice] = useState<string | null>(null);
   const [sentimentImpact, setSentimentImpact] = useState(1.0); // 1.0 = Neutral
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [prediction, setPrediction] = useState<PredictionResult | null>(null);
@@ -45,6 +46,21 @@ export const AnalysisScreen = ({ isDarkMode }: AnalysisScreenProps) => {
     errorBox: { backgroundColor: isDarkMode ? '#3e2723' : '#ffebee', borderColor: isDarkMode ? '#b71c1c' : '#ffcdd2' },
     errorText: { color: isDarkMode ? '#ffcdd2' : '#c62828' },
   };
+
+  useEffect(() => {
+    // Fetch initial BTC price for default
+    const fetchBtc = async () => {
+      try {
+         const response = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+         const price = parseFloat(response.data.price).toFixed(0);
+         setTargetBtc(price);
+         setCurrentBtcPrice(price);
+      } catch (e) {
+         console.warn("Failed to fetch initial BTC price", e);
+      }
+    };
+    fetchBtc();
+  }, []);
 
   const handlePredict = async () => {
     setLoadingAnalysis(true);
@@ -102,14 +118,24 @@ export const AnalysisScreen = ({ isDarkMode }: AnalysisScreenProps) => {
 
         {/* Target BTC */}
         <Text style={[styles.label, themeStyles.label]}>Target BTC Price ($)</Text>
-        <TextInput 
-          style={[styles.input, themeStyles.input]} 
-          value={targetBtc} 
-          onChangeText={setTargetBtc}
-          keyboardType="numeric"
-          placeholder="100000"
-          placeholderTextColor={isDarkMode ? "#666" : "#999"}
-        />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TextInput 
+            style={[styles.input, themeStyles.input, { flex: 1 }]} 
+            value={targetBtc} 
+            onChangeText={setTargetBtc}
+            keyboardType="numeric"
+            placeholder="100000"
+            placeholderTextColor={isDarkMode ? "#666" : "#999"}
+          />
+          <TouchableOpacity 
+            style={[styles.resetButton, { backgroundColor: isDarkMode ? '#333' : '#e0e0e0' }]}
+            onPress={() => {
+              if (currentBtcPrice) setTargetBtc(currentBtcPrice);
+            }}
+          >
+            <Text style={{ fontSize: 18, color: isDarkMode ? '#fff' : '#333' }}>↺</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Sentiment Impact */}
         <Text style={[styles.label, themeStyles.label]}>Sentiment Impact (Event Multiplier)</Text>
@@ -287,6 +313,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: '#e0e0e0',
+  },
+  resetButton: {
+    marginLeft: 10,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
   },
   tickerSelector: {
     flexDirection: 'row',
